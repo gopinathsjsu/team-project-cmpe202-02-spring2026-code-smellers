@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -19,7 +21,10 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.3.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }
