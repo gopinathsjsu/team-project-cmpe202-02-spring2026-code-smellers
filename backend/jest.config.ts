@@ -1,3 +1,8 @@
+/*
+Causes Warning:
+Warning: Failed to load the ES module: jest.config.ts. Make sure to set "type": "module" in the nearest package.json file or use the .mjs extension.
+*/
+
 import type { Config } from 'jest';
 
 const config: Config = {
