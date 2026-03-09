@@ -1,0 +1,190 @@
+@import "./tokens.css";
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: var(--ds-color-brand-50);
+  --color-brand-100: var(--ds-color-brand-100);
+  --color-brand-200: var(--ds-color-brand-200);
+  --color-brand-300: var(--ds-color-brand-300);
+  --color-brand-400: var(--ds-color-brand-400);
+  --color-brand-500: var(--ds-color-brand-500);
+  --color-brand-600: var(--ds-color-brand-600);
+  --color-brand-700: var(--ds-color-brand-700);
+  --color-brand-800: var(--ds-color-brand-800);
+  --color-brand-900: var(--ds-color-brand-900);
+  --color-brand-950: var(--ds-color-brand-950);
+
+  --color-accent-50: var(--ds-color-accent-50);
+  --color-accent-100: var(--ds-color-accent-100);
+  --color-accent-200: var(--ds-color-accent-200);
+  --color-accent-300: var(--ds-color-accent-300);
+  --color-accent-400: var(--ds-color-accent-400);
+  --color-accent-500: var(--ds-color-accent-500);
+  --color-accent-600: var(--ds-color-accent-600);
+  --color-accent-700: var(--ds-color-accent-700);
+  --color-accent-800: var(--ds-color-accent-800);
+  --color-accent-900: var(--ds-color-accent-900);
+  --color-accent-950: var(--ds-color-accent-950);
+
+  --color-neutral-50: var(--ds-color-neutral-50);
+  --color-neutral-100: var(--ds-color-neutral-100);
+  --color-neutral-200: var(--ds-color-neutral-200);
+  --color-neutral-300: var(--ds-color-neutral-300);
+  --color-neutral-400: var(--ds-color-neutral-400);
+  --color-neutral-500: var(--ds-color-neutral-500);
+  --color-neutral-600: var(--ds-color-neutral-600);
+  --color-neutral-700: var(--ds-color-neutral-700);
+  --color-neutral-800: var(--ds-color-neutral-800);
+  --color-neutral-900: var(--ds-color-neutral-900);
+  --color-neutral-950: var(--ds-color-neutral-950);
+
+  --color-success-50: var(--ds-color-success-50);
+  --color-success-100: var(--ds-color-success-100);
+  --color-success-200: var(--ds-color-success-200);
+  --color-success-300: var(--ds-color-success-300);
+  --color-success-400: var(--ds-color-success-400);
+  --color-success-500: var(--ds-color-success-500);
+  --color-success-600: var(--ds-color-success-600);
+  --color-success-700: var(--ds-color-success-700);
+  --color-success-800: var(--ds-color-success-800);
+  --color-success-900: var(--ds-color-success-900);
+  --color-success-950: var(--ds-color-success-950);
+
+  --color-warning-50: var(--ds-color-warning-50);
+  --color-warning-100: var(--ds-color-warning-100);
+  --color-warning-200: var(--ds-color-warning-200);
+  --color-warning-300: var(--ds-color-warning-300);
+  --color-warning-400: var(--ds-color-warning-400);
+  --color-warning-500: var(--ds-color-warning-500);
+  --color-warning-600: var(--ds-color-warning-600);
+  --color-warning-700: var(--ds-color-warning-700);
+  --color-warning-800: var(--ds-color-warning-800);
+  --color-warning-900: var(--ds-color-warning-900);
+  --color-warning-950: var(--ds-color-warning-950);
+
+  --color-error-50: var(--ds-color-error-50);
+  --color-error-100: var(--ds-color-error-100);
+  --color-error-200: var(--ds-color-error-200);
+  --color-error-300: var(--ds-color-error-300);
+  --color-error-400: var(--ds-color-error-400);
+  --color-error-500: var(--ds-color-error-500);
+  --color-error-600: var(--ds-color-error-600);
+  --color-error-700: var(--ds-color-error-700);
+  --color-error-800: var(--ds-color-error-800);
+  --color-error-900: var(--ds-color-error-900);
+  --color-error-950: var(--ds-color-error-950);
+
+  --color-surface-base: var(--ds-color-surface-base);
+  --color-surface-subtle: var(--ds-color-surface-subtle);
+  --color-surface-raised: var(--ds-color-surface-raised);
+  --color-surface-overlay: var(--ds-color-surface-overlay);
+  --color-surface-dark: var(--ds-color-surface-dark);
+  --color-surface-inverse: var(--ds-color-surface-inverse);
+
+  --font-sans: var(--ds-font-family-sans);
+  --font-display: var(--ds-font-family-display);
+
+  --text-xs: var(--ds-font-size-xs);
+  --text-xs--line-height: var(--ds-line-height-normal);
+  --text-sm: var(--ds-font-size-sm);
+  --text-sm--line-height: var(--ds-line-height-normal);
+  --text-base: var(--ds-font-size-base);
+  --text-base--line-height: var(--ds-line-height-normal);
+  --text-lg: var(--ds-font-size-lg);
+  --text-lg--line-height: var(--ds-line-height-relaxed);
+  --text-xl: var(--ds-font-size-xl);
+  --text-xl--line-height: var(--ds-line-height-relaxed);
+  --text-2xl: var(--ds-font-size-2xl);
+  --text-2xl--line-height: var(--ds-line-height-snug);
+  --text-3xl: var(--ds-font-size-3xl);
+  --text-3xl--line-height: var(--ds-line-height-snug);
+  --text-4xl: var(--ds-font-size-4xl);
+  --text-4xl--line-height: var(--ds-line-height-tight);
+  --text-5xl: var(--ds-font-size-5xl);
+  --text-5xl--line-height: var(--ds-line-height-tight);
+  --text-6xl: var(--ds-font-size-6xl);
+  --text-6xl--line-height: var(--ds-line-height-tight);
+
+  --font-weight-regular: var(--ds-font-weight-regular);
+  --font-weight-medium: var(--ds-font-weight-medium);
+  --font-weight-semibold: var(--ds-font-weight-semibold);
+  --font-weight-bold: var(--ds-font-weight-bold);
+  --font-weight-extrabold: var(--ds-font-weight-extrabold);
+
+  --spacing-1: var(--ds-spacing-1);
+  --spacing-2: var(--ds-spacing-2);
+  --spacing-3: var(--ds-spacing-3);
+  --spacing-4: var(--ds-spacing-4);
+  --spacing-5: var(--ds-spacing-5);
+  --spacing-6: var(--ds-spacing-6);
+  --spacing-8: var(--ds-spacing-8);
+  --spacing-10: var(--ds-spacing-10);
+  --spacing-12: var(--ds-spacing-12);
+  --spacing-16: var(--ds-spacing-16);
+  --spacing-20: var(--ds-spacing-20);
+  --spacing-24: var(--ds-spacing-24);
+  --spacing-30: var(--ds-spacing-30);
+
+  --radius-sm: var(--ds-radius-sm);
+  --radius-md: var(--ds-radius-md);
+  --radius-lg: var(--ds-radius-lg);
+  --radius-xl: var(--ds-radius-xl);
+  --radius-pill: var(--ds-radius-pill);
+
+  --shadow-soft: var(--ds-shadow-soft);
+  --shadow-card: var(--ds-shadow-card);
+  --shadow-elevated: var(--ds-shadow-elevated);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--ds-color-surface-base);
+  color: var(--ds-color-neutral-900);
+  font-family: var(--ds-font-family-sans);
+  font-size: var(--ds-font-size-base);
+  line-height: var(--ds-line-height-normal);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background-color: var(--ds-color-accent-300);
+  color: var(--ds-color-neutral-950);
+}
