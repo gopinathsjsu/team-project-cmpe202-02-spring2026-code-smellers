@@ -1,18 +1,18 @@
 import { Route, Routes } from "react-router";
-import Navbar from "./components/Navbar.tsx";
-import Footer from "./components/Footer.tsx";
-import Home from "./pages/Home.tsx";
-import Register from "./pages/Register.tsx";
-import Login from "./pages/Login.tsx";
-import DashboardUser from "./pages/DashboardUser.tsx";
-import DashboardOrganizer from "./pages/DashboardOrganizer.tsx";
+import { Footer } from "./components/footer";
+import { Navbar } from "./components/navbar";
 import DashboardAdmin from "./pages/DashboardAdmin.tsx";
+import DashboardOrganizer from "./pages/DashboardOrganizer.tsx";
+import DashboardUser from "./pages/DashboardUser.tsx";
 import EventDetails from "./pages/EventDetails.tsx";
+import Home from "./pages/Home.tsx";
+import Login from "./pages/Login.tsx";
+import Register from "./pages/Register.tsx";
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <div className="flex min-h-screen flex-col bg-surface-base text-neutral-900">
+      <Navbar isLoggedIn={false} onSearch={(query: string) => console.log(query)} />
       <main className="flex-1">
         <Routes>
           <Route index element={<Home />} />
