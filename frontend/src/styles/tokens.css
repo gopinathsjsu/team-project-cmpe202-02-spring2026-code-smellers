@@ -1,0 +1,134 @@
+:root {
+  --ds-color-brand-50: #f5f3ff;
+  --ds-color-brand-100: #ede9fe;
+  --ds-color-brand-200: #ddd6fe;
+  --ds-color-brand-300: #c4b5fd;
+  --ds-color-brand-400: #a78bfa;
+  --ds-color-brand-500: #8b5cf6;
+  --ds-color-brand-600: #7c3aed;
+  --ds-color-brand-700: #6d28d9;
+  --ds-color-brand-800: #5b21b6;
+  --ds-color-brand-900: #4c1d95;
+  --ds-color-brand-950: #2e1065;
+
+  --ds-color-accent-50: #f7fee7;
+  --ds-color-accent-100: #ecfccb;
+  --ds-color-accent-200: #d9f99d;
+  --ds-color-accent-300: #bef264;
+  --ds-color-accent-400: #a3e635;
+  --ds-color-accent-500: #84cc16;
+  --ds-color-accent-600: #65a30d;
+  --ds-color-accent-700: #4d7c0f;
+  --ds-color-accent-800: #3f6212;
+  --ds-color-accent-900: #365314;
+  --ds-color-accent-950: #1a2e05;
+
+  --ds-color-neutral-50: #f8fafc;
+  --ds-color-neutral-100: #f1f5f9;
+  --ds-color-neutral-200: #e2e8f0;
+  --ds-color-neutral-300: #cbd5e1;
+  --ds-color-neutral-400: #94a3b8;
+  --ds-color-neutral-500: #64748b;
+  --ds-color-neutral-600: #475569;
+  --ds-color-neutral-700: #334155;
+  --ds-color-neutral-800: #1e293b;
+  --ds-color-neutral-900: #0f172a;
+  --ds-color-neutral-950: #020617;
+
+  --ds-color-success-50: #ecfdf5;
+  --ds-color-success-100: #d1fae5;
+  --ds-color-success-200: #a7f3d0;
+  --ds-color-success-300: #6ee7b7;
+  --ds-color-success-400: #34d399;
+  --ds-color-success-500: #10b981;
+  --ds-color-success-600: #059669;
+  --ds-color-success-700: #047857;
+  --ds-color-success-800: #065f46;
+  --ds-color-success-900: #064e3b;
+  --ds-color-success-950: #022c22;
+
+  --ds-color-warning-50: #fffbeb;
+  --ds-color-warning-100: #fef3c7;
+  --ds-color-warning-200: #fde68a;
+  --ds-color-warning-300: #fcd34d;
+  --ds-color-warning-400: #fbbf24;
+  --ds-color-warning-500: #f59e0b;
+  --ds-color-warning-600: #d97706;
+  --ds-color-warning-700: #b45309;
+  --ds-color-warning-800: #92400e;
+  --ds-color-warning-900: #78350f;
+  --ds-color-warning-950: #451a03;
+
+  --ds-color-error-50: #fef2f2;
+  --ds-color-error-100: #fee2e2;
+  --ds-color-error-200: #fecaca;
+  --ds-color-error-300: #fca5a5;
+  --ds-color-error-400: #f87171;
+  --ds-color-error-500: #ef4444;
+  --ds-color-error-600: #dc2626;
+  --ds-color-error-700: #b91c1c;
+  --ds-color-error-800: #991b1b;
+  --ds-color-error-900: #7f1d1d;
+  --ds-color-error-950: #450a0a;
+
+  --ds-color-surface-base: #fafaf9;
+  --ds-color-surface-subtle: #f5f5f4;
+  --ds-color-surface-raised: #ffffff;
+  --ds-color-surface-overlay: #ede9fe;
+  --ds-color-surface-dark: #0f0a1e;
+  --ds-color-surface-inverse: #0f0a1e;
+
+  --ds-font-family-sans: "Plus Jakarta Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --ds-font-family-display: "Bricolage Grotesque", "Avenir Next", "Trebuchet MS", sans-serif;
+
+  --ds-font-size-xs: 0.75rem;
+  --ds-font-size-sm: 0.875rem;
+  --ds-font-size-base: 1rem;
+  --ds-font-size-lg: 1.125rem;
+  --ds-font-size-xl: 1.25rem;
+  --ds-font-size-2xl: 1.5rem;
+  --ds-font-size-3xl: 1.875rem;
+  --ds-font-size-4xl: 2.25rem;
+  --ds-font-size-5xl: 3rem;
+  --ds-font-size-6xl: 3.75rem;
+
+  --ds-font-weight-regular: 400;
+  --ds-font-weight-medium: 500;
+  --ds-font-weight-semibold: 600;
+  --ds-font-weight-bold: 700;
+  --ds-font-weight-extrabold: 800;
+
+  --ds-line-height-tight: 1.1;
+  --ds-line-height-snug: 1.25;
+  --ds-line-height-normal: 1.5;
+  --ds-line-height-relaxed: 1.65;
+
+  --ds-spacing-1: 0.25rem;
+  --ds-spacing-2: 0.5rem;
+  --ds-spacing-3: 0.75rem;
+  --ds-spacing-4: 1rem;
+  --ds-spacing-5: 1.25rem;
+  --ds-spacing-6: 1.5rem;
+  --ds-spacing-8: 2rem;
+  --ds-spacing-10: 2.5rem;
+  --ds-spacing-12: 3rem;
+  --ds-spacing-16: 4rem;
+  --ds-spacing-20: 5rem;
+  --ds-spacing-24: 6rem;
+  --ds-spacing-30: 7.5rem;
+
+  --ds-radius-sm: 0.5rem;
+  --ds-radius-md: 0.75rem;
+  --ds-radius-lg: 1rem;
+  --ds-radius-xl: 1.25rem;
+  --ds-radius-pill: 9999px;
+
+  --ds-shadow-soft: 0 2px 8px rgb(15 10 30 / 0.08);
+  --ds-shadow-card: 0 10px 30px rgb(15 10 30 / 0.1);
+  --ds-shadow-elevated: 0 18px 48px rgb(46 16 101 / 0.16);
+  --ds-shadow-focus: 0 0 0 3px rgb(163 230 53 / 0.35);
+
+  --ds-duration-fast: 150ms;
+  --ds-duration-base: 250ms;
+  --ds-duration-slow: 400ms;
+}
