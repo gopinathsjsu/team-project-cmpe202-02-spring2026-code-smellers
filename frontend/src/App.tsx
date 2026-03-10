@@ -4,6 +4,7 @@ import { Navbar } from "./components/navbar";
 import DashboardAdmin from "./pages/DashboardAdmin.tsx";
 import DashboardOrganizer from "./pages/DashboardOrganizer.tsx";
 import DashboardUser from "./pages/DashboardUser.tsx";
+import ComponentDemo from "./pages/ComponentDemo.tsx";
 import EventDetails from "./pages/EventDetails.tsx";
 import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="dashboard-user" element={<DashboardUser />} />
           <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
           <Route path="dashboard-admin" element={<DashboardAdmin />} />
+          <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
         </Routes>
       </main>

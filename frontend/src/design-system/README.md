@@ -71,6 +71,94 @@ const badgeBg = theme.colors.accent[400];
 const panelShadow = theme.shadows.card;
 ```
 
+## UI components
+
+Reusable components in `src/components/ui/` use the design tokens and follow the same patterns.
+
+### Button
+
+```tsx
+import { Button } from "@/components/ui/button";
+
+// Primary (default)
+<Button>Click me</Button>
+
+// Variants and sizes
+<Button variant="outline" size="lg">Browse Events</Button>
+<Button variant="ghost" size="sm">Cancel</Button>
+<Button variant="danger">Delete</Button>
+
+// Loading state
+<Button variant="primary" isLoading>Signing in...</Button>
+
+// With icon and full width
+<Button leftIcon={<SearchIcon />}>Search</Button>
+<Button fullWidth>Sign up</Button>
+```
+
+### Input and FormField
+
+```tsx
+import { Input, FormField } from "@/components/ui/input";
+
+// Basic input
+<Input placeholder="Enter your email" type="email" />
+
+// With label, hint, and error (pass error to both for styling + message)
+<FormField label="Email" htmlFor="email" required hint="We'll never share your email." error={errors.email}>
+  <Input id="email" type="email" error={errors.email} placeholder="you@example.com" />
+</FormField>
+
+// Password with show/hide toggle (built-in)
+<FormField label="Password" htmlFor="password" required>
+  <Input id="password" type="password" placeholder="••••••••" />
+</FormField>
+
+// With left icon
+<FormField label="Search" htmlFor="search">
+  <Input id="search" type="search" leftIcon={<SearchIcon />} placeholder="Search events…" />
+</FormField>
+```
+
+### Navbar
+
+Layout component in `src/components/navbar/`. Sticky top bar with logo, search (query + location), and auth links. Uses React Router `Link` / `NavLink` for internal navigation.
+
+```tsx
+import { Navbar } from "@/components/navbar";
+
+// Logged out (default)
+<Navbar isLoggedIn={false} onSearch={(query) => handleSearch(query)} />
+
+// Logged in with user
+<Navbar isLoggedIn={true} user={{ name: "Jane Doe", avatarUrl: "/avatars/jane.jpg" }} onSearch={(q) => setSearchQuery(q)} />
+```
+
+- **isLoggedIn** (required): `true` shows avatar with initials; `false` shows “Log in” and “Sign up” links.
+- **onSearch** (optional): called when the search query input changes.
+- **user** (optional): `{ name: string; avatarUrl?: string }` for logged-in avatar and tooltip.
+
+### Footer
+
+Layout component in `src/components/footer/`. Full-width dark footer with logo, link columns, and social icons. Uses React Router `Link` for internal links and plain `<a>` for external.
+
+```tsx
+import { Footer } from "@/components/footer";
+
+// Default columns (Company, Help, Explore)
+<Footer />
+
+// Custom link columns
+<Footer
+  columns={[
+    { heading: "Product", links: [{ label: "Features", href: "/features" }, { label: "Pricing", href: "/pricing" }] },
+    { heading: "Legal", links: [{ label: "Terms", href: "/terms" }, { label: "Privacy", href: "/privacy", external: true }] },
+  ]}
+/>
+```
+
+- **columns** (optional): array of `{ heading: string; links: FooterLink[] }`. Each link is `{ label, href, external? }`. Omit to use the default Evently columns.
+
 ## Guidance
 
 - Prefer Tailwind classes first for consistency and speed.
