@@ -120,6 +120,22 @@ import { Input, FormField } from "@/components/ui/input";
 </FormField>
 ```
 
+### EventCard
+
+```tsx
+import { EventCard } from "@/components/ui/event-card";
+
+<EventCard
+  id="1"
+  title="Jazz Night at the Civic Center"
+  imageUrl="/images/jazz.jpg"
+  date="Sat, Mar 15 · 7:00 PM"
+  location="San Jose, CA"
+  isSaved={false}
+  onSaveToggle={(id) => console.log("toggle", id)}
+/>;
+```
+
 ### Navbar
 
 Layout component in `src/components/navbar/`. Sticky top bar with logo, search (query + location), and auth links. Uses React Router `Link` / `NavLink` for internal navigation.
