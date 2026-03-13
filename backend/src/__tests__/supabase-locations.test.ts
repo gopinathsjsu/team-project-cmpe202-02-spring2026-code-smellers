@@ -2,14 +2,14 @@ import "dotenv/config";
 import { getSupabaseClient } from "../lib/supabase";
 
 /**
- * Requires a public "users" table and .env with SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
+ * Requires a public "locations" table and .env with SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
 */
 
-describe("Supabase users table", () => {
-  it("fetches and returns the entire users table", async () => {
+describe("Supabase locations table", () => {
+  it("fetches and returns the entire locations table", async () => {
     const supabase = getSupabaseClient();
 
-    const { data, error } = await supabase.from("users").select("*");
+    const { data, error } = await supabase.from("locations").select("*");
 
     expect(error).toBeNull();
     expect(data).toBeDefined();
