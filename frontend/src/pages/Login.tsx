@@ -6,7 +6,6 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
 
   return (
