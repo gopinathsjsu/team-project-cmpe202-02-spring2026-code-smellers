@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
+import { Link } from "react-router";
 
 export default function Forgot() {
-
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
 
   return (
-
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-display text-3xl font-bold text-brand-900">
         Forgot Password?
@@ -17,7 +16,6 @@ export default function Forgot() {
       {/* Input & FormField */}
       <section className="mt-12">
         <div className="mt-4 space-y-6">
-
           {/* Email */}
           <div>
             <FormField
@@ -41,23 +39,24 @@ export default function Forgot() {
             </FormField>
           </div>
 
-          <Button
-            fullWidth
-            className="max-w-xs"
-            size="lg"
-            onClick={() =>
-              setFormError(email ? undefined : "Email is required.")
-            }
-          >
-            Send Reset Link
-          </Button>
+          <div className="text-center">
+            <Button
+              fullWidth
+              className="max-w-xs mb-4"
+              size="lg"
+              onClick={() =>
+                setFormError(email ? undefined : "Email is required.")
+              }
+            >
+              Send Reset Link
+            </Button>
 
-          <div>
-            <p><a href="/login">Back to login</a></p>
+            <p className="underline">
+              <Link to="/login">Back to login</Link>
+            </p>
           </div>
-          
         </div>
       </section>
-  </div>
+    </div>
   );
 }

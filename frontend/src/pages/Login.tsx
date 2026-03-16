@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
+import { Link } from "react-router";
 
 export default function Login() {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
 
   return (
-
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-display text-3xl font-bold text-brand-900">
         Welcome Back!
@@ -18,7 +17,6 @@ export default function Login() {
       {/* Input & FormField */}
       <section className="mt-12">
         <div className="mt-4 space-y-6">
-
           {/* Email */}
           <div>
             <FormField
@@ -41,7 +39,7 @@ export default function Login() {
               />
             </FormField>
           </div>
-          
+
           {/* Password */}
           <div>
             <FormField label="Password" htmlFor="password-box" required>
@@ -55,24 +53,34 @@ export default function Login() {
             </FormField>
           </div>
 
-          <Button
-            fullWidth
-            className="max-w-xs"
-            size="lg"
-            onClick={() =>
-              setFormError(email ? undefined : "Email is required.")
-            }
-          >
-            Login
-          </Button>
-          
-          <div>
-            <p><a href="/forgot">Forgot password?</a></p>
-            <p> New to &lt;appname&gt;? <a href="/register">Sign up</a></p>
+          <div className="text-center">
+            <Button
+              fullWidth
+              className="max-w-xs mb-4"
+              size="lg"
+              onClick={() =>
+                setFormError(email ? undefined : "Email is required.")
+              }
+            >
+              Login
+            </Button>
+
+            <div>
+              <p className="underline">
+                <Link to="/forgot">Forgot password?</Link>
+              </p>
+              <p>
+                {" "}
+                New to &lt;appname&gt;?{" "}
+                <span className="underline">
+                  {" "}
+                  <Link to="/register">Sign up</Link>
+                </span>
+              </p>
+            </div>
           </div>
-          
         </div>
       </section>
-  </div>
+    </div>
   );
 }
