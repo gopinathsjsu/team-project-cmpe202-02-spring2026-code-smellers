@@ -9,12 +9,13 @@ import EventDetails from "./pages/EventDetails.tsx";
 import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
+import Forgot from "./pages/Forgot.tsx";
 
 import { useLocation } from "react-router";
 
 export default function App() {
   const location = useLocation();
-  const hideHeaderFooter = ['/register', '/login'].includes(location.pathname);
+  const hideHeaderFooter = ['/register', '/login', '/forgot'].includes(location.pathname);
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-base text-neutral-900">
@@ -24,6 +25,7 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="register" element={<Register />} />
           <Route path="login" element={<Login />} />
+          <Route path="forgot" element={<Forgot />} />
           <Route path="dashboard-user" element={<DashboardUser />} />
           <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
           <Route path="dashboard-admin" element={<DashboardAdmin />} />
