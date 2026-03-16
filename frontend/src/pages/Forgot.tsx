@@ -3,15 +3,14 @@ import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
 import { Link } from "react-router";
 
-export default function Login() {
+export default function Forgot() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-display text-3xl font-bold text-brand-900">
-        Welcome Back!
+        Forgot Password?
       </h1>
 
       {/* Input & FormField */}
@@ -23,7 +22,7 @@ export default function Login() {
               label="Email"
               htmlFor="email-box"
               required
-              hint="We'll never share your email."
+              hint="We will send you a password reset link if there is an account associated with your email address."
               error={formError}
             >
               <Input
@@ -40,19 +39,6 @@ export default function Login() {
             </FormField>
           </div>
 
-          {/* Password */}
-          <div>
-            <FormField label="Password" htmlFor="password-box" required>
-              <Input
-                id="password-box"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </FormField>
-          </div>
-
           <div className="text-center">
             <Button
               fullWidth
@@ -62,22 +48,12 @@ export default function Login() {
                 setFormError(email ? undefined : "Email is required.")
               }
             >
-              Login
+              Send Reset Link
             </Button>
 
-            <div>
-              <p className="underline">
-                <Link to="/forgot">Forgot password?</Link>
-              </p>
-              <p>
-                {" "}
-                New to &lt;appname&gt;?{" "}
-                <span className="underline">
-                  {" "}
-                  <Link to="/register">Sign up</Link>
-                </span>
-              </p>
-            </div>
+            <p className="underline">
+              <Link to="/login">Back to login</Link>
+            </p>
           </div>
         </div>
       </section>
