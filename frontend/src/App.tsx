@@ -10,10 +10,15 @@ import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 
+import { useLocation } from "react-router";
+
 export default function App() {
+  const location = useLocation();
+  const hideHeaderFooter = ['/register', '/login'].includes(location.pathname);
+
   return (
     <div className="flex min-h-screen flex-col bg-surface-base text-neutral-900">
-      <Navbar isLoggedIn={false} onSearch={(query: string) => console.log(query)} />
+      {!hideHeaderFooter && <Navbar isLoggedIn={false} onSearch={(query: string) => console.log(query)} />}
       <main className="flex-1">
         <Routes>
           <Route index element={<Home />} />
@@ -26,7 +31,7 @@ export default function App() {
           <Route path="events/:id" element={<EventDetails />} />
         </Routes>
       </main>
-      <Footer />
+      {!hideHeaderFooter && <Footer />}
     </div>
   );
 }
