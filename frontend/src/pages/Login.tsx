@@ -23,13 +23,13 @@ export default function Login() {
           <div>
             <FormField
               label="Email"
-              htmlFor="demo-email"
+              htmlFor="email-box"
               required
               hint="We'll never share your email."
               error={formError}
             >
               <Input
-                id="demo-email"
+                id="email-box"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -44,9 +44,9 @@ export default function Login() {
           
           {/* Password */}
           <div>
-            <FormField label="Password" htmlFor="demo-password" required>
+            <FormField label="Password" htmlFor="password-box" required>
               <Input
-                id="demo-password"
+                id="password-box"
                 type="password"
                 placeholder="••••••••"
                 value={password}

@@ -22,13 +22,13 @@ export default function Forgot() {
           <div>
             <FormField
               label="Email"
-              htmlFor="demo-email"
+              htmlFor="email-box"
               required
               hint="We will send you a password reset link if there is an account associated with your email address."
               error={formError}
             >
               <Input
-                id="demo-email"
+                id="email-box"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
