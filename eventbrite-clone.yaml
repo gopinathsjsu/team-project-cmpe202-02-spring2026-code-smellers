@@ -1,14 +1,24 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: EventBrite-Like Platform API
-  description: CMPE 202 Group Project - Event creation and ticketing platform
+  title: Event Platform API
+  description: Eventbrite-like platform for CMPE 202
   version: 1.0.0
 
 servers:
-  - url: https://api.eventplatform.example.com/v1
-    description: Production
+  - url: https://api.eventplatform.com/v1
+
+tags:
+  - name: Auth
+  - name: Events
+  - name: Tickets
+  - name: Categories
+  - name: Organizer
+  - name: Admin
+  - name: Discovery
+  - name: Calendar
 
 components:
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -16,6 +26,7 @@ components:
       bearerFormat: JWT
 
   schemas:
+
     Error:
       type: object
       properties:
@@ -25,91 +36,148 @@ components:
         error:
           type: object
           properties:
-            code: { type: string }
-            message: { type: string }
-            details: { type: array, items: {} }
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: string
 
     User:
       type: object
+      required: [userId, email, displayName, role]
       properties:
-        userId: { type: string, format: uuid }
-        email: { type: string, format: email }
-        displayName: { type: string }
-        isAdmin: { type: boolean, description: "Only admins have moderation rights; all users can create and attend events" }
-        createdAt: { type: string, format: date-time }
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [attendee, organizer, admin]
+        createdAt:
+          type: string
+          format: date-time
 
-    RegisterRequest:
-      type: object
-      required: [email, password, displayName]
-      properties:
-        email: { type: string, format: email }
-        password: { type: string, minLength: 8 }
-        displayName: { type: string }
-
-    Event:
+    Category:
       type: object
       properties:
-        eventId: { type: string, format: uuid }
-        title: { type: string }
-        description: { type: string }
-        categoryId: { type: string }
-        startDateTime: { type: string, format: date-time }
-        endDateTime: { type: string, format: date-time }
-        location: { $ref: '#/components/schemas/Location' }
-        capacity: { type: integer }
-        status: { type: string, enum: [pending, approved, rejected] }
-        organizerId: { type: string }
-        imageUrl: { type: string }
+        categoryId:
+          type: string
+        name:
+          type: string
 
     Location:
       type: object
       properties:
-        type: { type: string, enum: [in-person, virtual] }
-        address: { type: string }
-        venueName: { type: string }
-
-    TicketReceipt:
-      type: object
-      description: Ticket / receipt for an event registration
-      properties:
-        id:
+        type:
           type: string
-          description: Primary key for ticket/receipt
+          enum: [in-person, virtual]
+        venueName:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    Event:
+      type: object
+      required: [eventId, title, startDateTime, endDateTime, capacity]
+      properties:
         eventId:
           type: string
-          description: Foreign key to Event.id
-        customerId:
+          format: uuid
+        title:
           type: string
-          description: Foreign key to User.id
-        datePurchased:
+        description:
+          type: string
+        categoryId:
+          type: string
+        organizerId:
+          type: string
+        startDateTime:
           type: string
           format: date-time
+        endDateTime:
+          type: string
+          format: date-time
+        location:
+          $ref: "#/components/schemas/Location"
+        capacity:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        imageUrl:
+          type: string
+
+    Ticket:
+      type: object
+      required: [ticketId, eventId, userId]
+      properties:
+        ticketId:
+          type: string
+        eventId:
+          type: string
+        userId:
+          type: string
         rsvpStatus:
           type: string
-          enum: [pending, confirmed, canceled, attended]
-        isEmailSent:
-          type: boolean
-      required:
-        - id
-        - eventId
-        - customerId
+          enum: [confirmed, canceled, attended]
+        createdAt:
+          type: string
+          format: date-time
+
+    PaginatedEvents:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
 
 paths:
-  # ========== AUTH ==========
+
   /auth/register:
     post:
-      summary: Register new user
+      tags: [Auth]
+      summary: Register user
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              type: object
+              required: [email, password, displayName]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                displayName:
+                  type: string
       responses:
-        '201': { description: Created }
-        '400': { description: Validation error }
+        "201":
+          description: User created
 
   /auth/login:
     post:
+      tags: [Auth]
       summary: Login
       requestBody:
         content:
@@ -118,278 +186,243 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email: { type: string }
-                password: { type: string }
+                email:
+                  type: string
+                password:
+                  type: string
       responses:
-        '200': { description: OK, returns JWT }
-        '401': { description: Invalid credentials }
+        "200":
+          description: Returns JWT token
 
   /auth/me:
     get:
-      summary: Get current user
-      security: [{ bearerAuth: [] }]
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      summary: Current user
       responses:
-        '200': { description: OK }
-        '401': { description: Unauthorized }
-
-  # ========== EVENTS ==========
-  /events:
-    get:
-      summary: List events (search, filter, paginate)
-      parameters:
-        - name: q
-          in: query
-          schema: { type: string }
-        - name: categoryId
-          in: query
-          schema: { type: string }
-        - name: startDate
-          in: query
-          schema: { type: string, format: date }
-        - name: endDate
-          in: query
-          schema: { type: string, format: date }
-        - name: location
-          in: query
-          schema: { type: string }
-        - name: sort
-          in: query
-          schema: { type: string, enum: [date, popularity, distance] }
-        - name: page
-          in: query
-          schema: { type: integer, default: 1 }
-        - name: limit
-          in: query
-          schema: { type: integer, default: 20 }
-      responses:
-        '200': { description: OK }
-
-    post:
-      summary: Create event
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [title, startDateTime, endDateTime, location, capacity]
-              properties:
-                title: { type: string }
-                description: { type: string }
-                categoryId: { type: string }
-                startDateTime: { type: string, format: date-time }
-                endDateTime: { type: string, format: date-time }
-                location: { $ref: '#/components/schemas/Location' }
-                capacity: { type: integer }
-                imageUrl: { type: string }
-      responses:
-        '201': { description: Created }
-        '400': { description: Validation error }
-        '403': { description: Forbidden }
-
-  /events/{eventId}:
-    get:
-      summary: Get event details
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200': { description: OK }
-        '404': { description: Not found }
-
-    patch:
-      summary: Update event
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/Event' }
-      responses:
-        '200': { description: OK }
-        '403': { description: Forbidden }
-        '404': { description: Not found }
-
-    delete:
-      summary: Delete event
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '204': { description: Deleted }
-        '403': { description: Forbidden }
-
-  # ========== REGISTRATION ==========
-  /events/{eventId}/register:
-    post:
-      summary: Register/RSVP for event
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [attendeeEmail]
-              properties:
-                attendeeEmail: { type: string, format: email }
-      responses:
-        '201':
-          description: Registered
+        "200":
+          description: Logged-in user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TicketReceipt'
-        '400': { description: Event full or validation error }
-        '404': { description: Event not found }
+                $ref: "#/components/schemas/User"
 
-  # ========== ATTENDEE - MY REGISTRATIONS ==========
-  /users/me/registrations:
+  /events:
     get:
-      summary: List my registered events
-      description: Returns all events the current user has registered for (RSVP'd or purchased tickets)
-      security: [{ bearerAuth: [] }]
+      tags: [Discovery]
+      summary: Discover events
       parameters:
-        - name: rsvpStatus
-          in: query
+        - in: query
+          name: q
           schema:
             type: string
-            enum: [pending, confirmed, canceled, attended]
-          description: Filter by RSVP status
-        - name: page
-          in: query
-          schema: { type: integer, default: 1 }
-        - name: limit
-          in: query
-          schema: { type: integer, default: 20 }
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: location
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
       responses:
-        '200':
-          description: OK
+        "200":
+          description: Paginated events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedEvents"
+
+    post:
+      tags: [Events]
+      summary: Create event
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        "201":
+          description: Event created
+
+  /events/{eventId}:
+    get:
+      tags: [Events]
+      summary: Event detail page
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{eventId}/tickets:
+    post:
+      tags: [Tickets]
+      summary: Register / RSVP for event
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Ticket issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+
+  /users/me/tickets:
+    get:
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      summary: List my tickets
+      responses:
+        "200":
+          description: User tickets
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TicketReceipt'
-        '401': { description: Unauthorized }
+                  $ref: "#/components/schemas/Ticket"
 
-  # ========== ORGANIZER ==========
-  /organizers/events:
+  /organizer/events:
     get:
-      summary: List my events
-      security: [{ bearerAuth: [] }]
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
+      summary: Events created by organizer
       responses:
-        '200': { description: OK }
+        "200":
+          description: Organizer events
 
-  /organizers/events/{eventId}/attendees:
+  /organizer/events/{eventId}/attendees:
     get:
-      summary: List attendees
-      security: [{ bearerAuth: [] }]
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
+      summary: Attendee list
       parameters:
         - name: eventId
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
-        '200': { description: OK }
+        "200":
+          description: Attendees list
 
-  # ========== ADMIN ==========
   /admin/events/pending:
     get:
-      summary: List pending events for approval
-      security: [{ bearerAuth: [] }]
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Events awaiting moderation
       responses:
-        '200': { description: OK }
+        "200":
+          description: Pending events
 
-  /admin/events/{eventId}/approve:
-    post:
-      summary: Approve event
-      security: [{ bearerAuth: [] }]
+  /admin/events/{eventId}/status:
+    patch:
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      summary: Approve or reject event
       parameters:
         - name: eventId
           in: path
           required: true
-          schema: { type: string }
-      responses:
-        '200': { description: Approved }
-        '403': { description: Forbidden }
-
-  /admin/events/{eventId}/reject:
-    post:
-      summary: Reject event
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                reason: { type: string }
+                status:
+                  type: string
+                  enum: [approved, rejected]
+                reason:
+                  type: string
       responses:
-        '200': { description: Rejected }
+        "200":
+          description: Status updated
 
-  # ========== CALENDAR ==========
   /events/{eventId}/calendar/google:
     get:
-      summary: Get Google Calendar add URL
+      tags: [Calendar]
+      summary: Generate Google Calendar link
       parameters:
         - name: eventId
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
-        '200': { description: OK }
+        "200":
+          description: Calendar link generated
 
-  # ========== LOCATION ==========
   /events/nearby:
     get:
-      summary: Events near location
+      tags: [Discovery]
+      summary: Discover events near location
       parameters:
         - name: lat
           in: query
           required: true
-          schema: { type: number }
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
         - name: lng
           in: query
           required: true
-          schema: { type: number }
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
         - name: radius
           in: query
-          schema: { type: number, default: 10 }
-        - name: limit
-          in: query
-          schema: { type: integer, default: 20 }
+          schema:
+            type: number
+            default: 10
       responses:
-        '200': { description: OK }
+        "200":
+          description: Nearby events
 
-  # ========== CATEGORIES ==========
   /categories:
     get:
-      summary: List categories
+      tags: [Categories]
+      summary: List event categories
       responses:
-        '200': { description: OK }
-
-  # ========== HEALTH ==========
-  /health:
-    get:
-      summary: Health check
-      responses:
-        '200': { description: OK }
+        "200":
+          description: Categories list
