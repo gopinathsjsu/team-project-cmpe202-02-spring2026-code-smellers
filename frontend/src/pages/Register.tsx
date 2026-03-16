@@ -33,7 +33,6 @@ export default function Register() {
               <Input
                 placeholder="First Last"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
                 error={nameError}
                 onChange={(e) => {
                   setName(e.target.value);
