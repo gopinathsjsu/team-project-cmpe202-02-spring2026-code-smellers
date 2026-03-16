@@ -67,8 +67,10 @@ export default function Login() {
             Login
           </Button>
           
-          <a href="/forgot"></a>
-          <p> New to &lt;appname&gt;? <a  href="/register">Sign up</a> </p>
+          <div>
+            <p><a href="/forgot">Forgot password?</a></p>
+            <p> New to &lt;appname&gt;? <a href="/register">Sign up</a></p>
+          </div>
           
         </div>
       </section>
