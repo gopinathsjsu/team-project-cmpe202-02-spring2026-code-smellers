@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
 
-export default function Login() {
+export default function Forgot() {
 
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
