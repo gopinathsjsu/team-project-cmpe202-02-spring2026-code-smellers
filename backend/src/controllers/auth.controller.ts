@@ -1,16 +1,8 @@
 import { Request, Response } from "express";
 import { getSupabaseClient } from "../lib/supabase";
+import { RegisterRequestBody } from "../types/auth.types";
 
-//Functions like an class/interface for expected User Register Request content
-//Uses optional ("?") field for input validation using the validateRegisterBody function
-//NOTE: not sure if displayName is required, or if it should be fullName instead
-type RegisterRequestBody = {
-	email?: string;
-	password?: string;
-	displayName?: string;
-	role?: "attendee" | "organizer" | "admin";
-};
-
+//Validation function for expected Register Request content
 function validateRegisterBody(body: RegisterRequestBody): string | null {
 	if (!body.email) {
 		return "Missing required field: email";

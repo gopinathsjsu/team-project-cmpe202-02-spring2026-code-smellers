@@ -1,18 +1,7 @@
 import { Request, Response } from "express";
+import { CreateEventRequestBody } from "../types/event.types";
 
-//Functions like an class/interface for expected Event Create Request content
-type CreateEventRequestBody = {
-  title?: string;
-  description?: string;
-  categoryId?: string;
-  organizerId?: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  location?: unknown;
-  capacity?: number;
-  imageUrl?: string;
-};
-
+//Validation function for expected Event Create Request content
 function validateCreateEventBody(body: CreateEventRequestBody): string | null {
   //Check required fields
   if (!body.title) {
