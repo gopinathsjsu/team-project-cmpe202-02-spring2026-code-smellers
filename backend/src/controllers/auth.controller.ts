@@ -50,7 +50,7 @@ export const registerUser = async (req: Request, res: Response) => {
 			options: {
 				data: {
 					displayName: registerReqDetails.displayName,
-					role: registerReqDetails.role ?? "attendee", //default to "attendee" role
+					is_admin: registerReqDetails.is_admin,
 				},
 			},
 		});
@@ -68,15 +68,20 @@ export const registerUser = async (req: Request, res: Response) => {
 
         //JSON-format for insert new user row into "users" DB table
 		const userRecord = {
-			userId: authUserId,
+			id: authUserId,
 			email: registerReqDetails.email,
-			displayName: registerReqDetails.displayName,
-			role: registerReqDetails.role ?? "attendee",
+			display_name: registerReqDetails.displayName,
+			is_admin: registerReqDetails.is_admin,
 		};
         //Insert user row into DB with supabase
+				// RECOMMENDATION: Use Postgres trigger to automatically create user record in "users" table 
+				// upon new auth entry creation in Supabase, instead of doing it manually here. This would ensure 
+				// data consistency and reduce potential points of failure.
 		const { data: createdUser, error: createUserError } = await supabase
 			.from("users")
-			.insert(userRecord)
+			// FIXED: Supabase types was complaining. userRecord must match the DB table schema exactly, 
+			// including required columns.
+			.insert(userRecord) 
 			.select("*")
 			.single();
         //ErrorCheck: DB entry response error for creating user record in "users" table
