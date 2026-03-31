@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import { CreateEventRequestBody } from "../types/event.types";
+import { getSupabaseClient } from "../lib/supabase";
 
 //Validation function for expected Event Create Request content
 function validateCreateEventBody(body: CreateEventRequestBody): string | null {
   //Check required fields
   if (!body.title) {
     return "Missing required field: title";
+  }
+  if (!body.category) {
+    return "Missing required field: category";
   }
   if (!body.startDateTime) {
     return "Missing required field: startDateTime";
@@ -48,7 +52,10 @@ export const getEventById = async (req: Request, res: Response) => {
 createEvent endpoint function has the following possible response codes:
 201:  -Successful event creation (returns created event data as JSON)
 400:  -Invalid event create content
-[more]
+      -Location creation error
+500:  -Missing organizer_id from auth context
+      -Event insert database error
+      -Catch-all for unexpected errors
 */
 export const createEvent = async (req: Request, res: Response) => {
   try {
@@ -61,22 +68,69 @@ export const createEvent = async (req: Request, res: Response) => {
       return res.status(400).json({ error: validationError });
     }
 
-    //Enforce role authorization
-    // -Verify user role permissions (i.e. only "organizer" role can create events)
-    // -If unauthorized, return error 403
+    //TODO: Get organizer_id from authenticated user context
+    // For now, returning 500 as placeholder
+    const organizerId = req.headers["x-organizer-id"] as string;
+    if (!organizerId) {
+      return res.status(500).json({ 
+        error: "Organizer ID not found in request context. Auth middleware not implemented yet." 
+      });
+    }
 
-    //Insert the event into the database
-    // -Use Supabase client
-    // -Insert into "events" table
-    // -Request inserted row back (select + single) for return
+    const supabase = getSupabaseClient();
+    let locationId: number | null = null;
 
-    //Handle database errors
-    // -If Supabase returns an error, map it to an HTTP error code
+    //Create location if location details are provided
+    if (body.location) {
+      const locationType = body.location.type ?? "in-person";
+      
+      const { data: createdLocation, error: locationError } = await supabase
+        .from("locations")
+        .insert({
+          type: locationType,
+          venue_name: body.location.venueName ?? null,
+          address: body.location.address ?? null,
+          latitude: body.location.latitude ?? null,
+          longitude: body.location.longitude ?? null,
+        } as any)
+        .select("id")
+        .single();
 
-    //Return success response
-    // -Return 201 Created
-    // -Include created event object in JSON body
-    return res.status(201).json({message: "Event created successfully"});
+      if (locationError) {
+        return res.status(400).json({ error: `Location creation failed: ${locationError.message}` });
+      }
+
+      locationId = createdLocation?.id ?? null;
+    }
+
+    //Build event insert payload matching database schema
+    const eventRecord = {
+      title: body.title as string,
+      description: body.description ?? null,
+      category: body.category as string,
+      start_date_time: body.startDateTime as string,
+      end_date_time: body.endDateTime as string,
+      capacity: body.capacity as number,
+      image_url: body.imageUrl ?? null,
+      location_id: locationId,
+      organizer_id: organizerId,
+      approval_status: "pending",
+      rsvp_count: 0,
+    } as any;
+
+    //Insert event into database
+    const { data: createdEvent, error: eventError } = await supabase
+      .from("events")
+      .insert(eventRecord)
+      .select("*")
+      .single();
+
+    if (eventError) {
+      return res.status(400).json({ error: `Event creation failed: ${eventError.message}` });
+    }
+
+    //Return success response with created event
+    return res.status(201).json(createdEvent);
   } catch (error) {
     //Catch-all for any unexpected errors
     return res.status(500).json({
