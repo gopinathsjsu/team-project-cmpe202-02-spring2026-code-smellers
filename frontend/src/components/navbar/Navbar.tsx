@@ -41,7 +41,7 @@ function LocationIcon() {
 
 function getInitials(name?: string) {
   if (!name) {
-    return "EV";
+    return "ED";
   }
 
   return name
@@ -109,7 +109,7 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
               to="/"
               className="font-display text-2xl font-bold tracking-tight text-brand-800 transition-colors duration-fast hover:text-brand-700"
             >
-              Evently
+              Eventdull
             </Link>
           </div>
 
@@ -129,8 +129,8 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
             {isLoggedIn ? (
               <div
                 className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white shadow-soft"
-                aria-label={`Signed in as ${user?.name ?? "Evently user"}`}
-                title={user?.name ?? "Evently user"}
+                aria-label={`Signed in as ${user?.name ?? "Eventdull user"}`}
+                title={user?.name ?? "Eventdull user"}
               >
                 {initials}
               </div>

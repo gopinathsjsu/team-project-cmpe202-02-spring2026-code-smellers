@@ -80,7 +80,7 @@ export function Footer({ columns = defaultColumns }: FooterProps) {
             to="/"
             className="font-display text-2xl font-bold tracking-tight text-brand-300 transition-colors duration-fast hover:text-brand-200"
           >
-            Evently
+            Eventdull
           </Link>
           <p className="mt-4 text-sm leading-relaxed text-neutral-400">
             Discover and create events that matter.
@@ -105,7 +105,7 @@ export function Footer({ columns = defaultColumns }: FooterProps) {
 
       <div className="border-t border-neutral-800">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <p className="text-sm text-neutral-400">© 2025 Evently. All rights reserved.</p>
+          <p className="text-sm text-neutral-400">© 2025 Eventdull. All rights reserved.</p>
 
           <div className="flex items-center gap-2">
             <SocialLink label="Twitter">
