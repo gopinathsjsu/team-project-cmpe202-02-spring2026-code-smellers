@@ -37,76 +37,88 @@ const nearbyEvents: HomeEvent[] = [
 ];
 
 function CategoryIcon({ type }: { type: Category["icon"] }) {
+  const iconBaseClass = "h-7 w-7";
+  const iconProps = {
+    className: iconBaseClass,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
   if (type === "music") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M7 15.2a1.8 1.8 0 1 1-3.6 0A1.8 1.8 0 0 1 7 15.2ZM16.6 13.2a1.8 1.8 0 1 1-3.6 0 1.8 1.8 0 0 1 3.6 0Z" />
-        <path d="M7 15.2V6.2l9-2v9" strokeLinecap="round" strokeLinejoin="round" />
+      <svg {...iconProps}>
+        <path d="M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" />
+        <path d="M19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" />
+        <path d="M9 18V6l10-2v12" />
       </svg>
     );
   }
 
   if (type === "sports") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="10" cy="10" r="6.5" />
-        <path d="M10 3.5v13M3.5 10h13" strokeLinecap="round" />
+      <svg {...iconProps}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M6.6 6.6 17.4 17.4M17.4 6.6 6.6 17.4M12 4v16M4 12h16" />
       </svg>
     );
   }
 
   if (type === "food") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M5.5 3.5v6M8.5 3.5v6M5.5 6.5h3M7 9.5V17" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M13.5 3.5c1.7 2 1.7 4.7 0 6.7V17" strokeLinecap="round" strokeLinejoin="round" />
+      <svg {...iconProps}>
+        <path d="M6 3v8M9 3v8M6 7h3M7.5 11v10" />
+        <path d="M16 3c2 2.2 2 5.8 0 8v10" />
       </svg>
     );
   }
 
   if (type === "art") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M10 3.5a6.5 6.5 0 1 0 0 13h1.2c1 0 1.8-.8 1.8-1.8 0-1.4-1.2-1.8-1.2-2.7 0-1.1 1.1-1.4 2-1.4h.2a2.8 2.8 0 0 0 2.8-2.8A4.3 4.3 0 0 0 12.5 3.5H10Z" />
-        <circle cx="6.8" cy="8.1" r=".7" fill="currentColor" />
-        <circle cx="9.2" cy="6.9" r=".7" fill="currentColor" />
-        <circle cx="11.7" cy="7.1" r=".7" fill="currentColor" />
+      <svg {...iconProps}>
+        <path d="M12 3.5a8.5 8.5 0 1 0 0 17h1.4c1.2 0 2.1-1 2.1-2.1 0-1.6-1.4-2.1-1.4-3.1 0-1.3 1.2-1.6 2.3-1.6h.2A3.6 3.6 0 0 0 20 10a6.5 6.5 0 0 0-6.5-6.5H12Z" />
+        <circle cx="8.3" cy="9.4" r=".9" fill="currentColor" stroke="none" />
+        <circle cx="11.4" cy="7.8" r=".9" fill="currentColor" stroke="none" />
+        <circle cx="14.3" cy="8.5" r=".9" fill="currentColor" stroke="none" />
       </svg>
     );
   }
 
   if (type === "tech") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="3.5" y="4" width="13" height="9.5" rx="1.5" />
-        <path d="M8 16h4M10 13.5V16" strokeLinecap="round" />
+      <svg {...iconProps}>
+        <rect x="3" y="4" width="18" height="12" rx="2.5" />
+        <path d="M8 20h8M12 16v4" />
       </svg>
     );
   }
 
   if (type === "business") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="3.5" y="5" width="13" height="10.5" rx="1.5" />
-        <path d="M7 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M3.5 9h13" strokeLinecap="round" />
+      <svg {...iconProps}>
+        <rect x="3" y="6" width="18" height="13" rx="2.5" />
+        <path d="M9 6V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v1M3 11h18" />
       </svg>
     );
   }
 
   if (type === "community") {
     return (
-      <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="7" cy="7" r="2" />
-        <circle cx="13" cy="7.5" r="1.8" />
-        <path d="M3.8 15.5c.5-2 1.9-3.2 3.9-3.2s3.4 1.2 3.9 3.2M11.2 15.5c.3-1.5 1.3-2.5 2.8-2.5 1.6 0 2.6 1 3 2.5" strokeLinecap="round" />
+      <svg {...iconProps}>
+        <circle cx="8" cy="8" r="2.2" />
+        <circle cx="16" cy="9" r="1.8" />
+        <path d="M3.5 19c.6-2.5 2.4-4 4.8-4s4.2 1.5 4.8 4M13.2 19c.4-1.8 1.6-3 3.3-3 1.8 0 3 1.2 3.5 3" />
       </svg>
     );
   }
 
   return (
-    <svg className="h-6 w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M10 17s5-4.4 5-8.5C15 5.5 12.8 3 10 3S5 5.5 5 8.5C5 12.6 10 17 10 17Z" />
-      <circle cx="10" cy="8.2" r="2" />
+    <svg {...iconProps}>
+      <path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
+      <circle cx="12" cy="11" r="2" />
     </svg>
   );
 }
@@ -151,7 +163,7 @@ export default function Home() {
               className="group flex flex-col items-center gap-2 rounded-lg py-2 transition-transform duration-fast hover:-translate-y-0.5"
               aria-label={`View ${category.name} events`}
             >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full border border-neutral-300 bg-surface-raised text-brand-700 shadow-soft transition-colors duration-fast group-hover:border-brand-400 group-hover:bg-brand-50">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full border border-brand-100 bg-gradient-to-br from-white to-brand-50/70 text-brand-700 shadow-soft transition-all duration-fast group-hover:-translate-y-0.5 group-hover:border-brand-300 group-hover:from-brand-50 group-hover:to-brand-100/70 group-hover:text-brand-800 group-hover:shadow-elevated">
                 <CategoryIcon type={category.icon} />
               </span>
               <span className="text-sm font-semibold text-neutral-700">{category.name}</span>
