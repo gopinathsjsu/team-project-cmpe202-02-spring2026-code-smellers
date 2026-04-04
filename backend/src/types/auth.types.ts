@@ -4,3 +4,8 @@ export interface RegisterRequestBody {
   displayName: string;
   is_admin: boolean;
 }
+
+export interface LoginRequestBody {
+  email: string;
+  password: string;
+}
