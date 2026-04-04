@@ -1,5 +1,8 @@
 import { NextFunction, Request, Response } from "express";
+import { User } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../lib/supabase";
+
+type RequestWithUser = Request & { user?: User };
 
 export const requireAuth = async (
 	req: Request,
@@ -24,7 +27,7 @@ export const requireAuth = async (
 			return res.status(401).json({ error: "Invalid or expired access token" });
 		}
 
-		req.user = data.user;
+		(req as RequestWithUser).user = data.user;
 		return next();
 	} catch (error) {
 		return res.status(500).json({
