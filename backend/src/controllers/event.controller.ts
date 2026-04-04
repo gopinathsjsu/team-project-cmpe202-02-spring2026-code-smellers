@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
+import { User } from "@supabase/supabase-js";
 import { CreateEventRequestBody } from "../types/event.types";
 import { getSupabaseClient } from "../lib/supabase";
+
+type RequestWithUser = Request & { user?: User };
 
 //Validation function for expected Event Create Request content
 function validateCreateEventBody(body: CreateEventRequestBody): string | null {
@@ -69,7 +72,7 @@ export const createEvent = async (req: Request, res: Response) => {
     }
 
     //Use the authenticated Supabase user as the organizer
-    const organizerId = req.user?.id;
+    const organizerId = (req as RequestWithUser).user?.id;
     if (!organizerId) {
       return res.status(401).json({
         error: "Authentication required",
