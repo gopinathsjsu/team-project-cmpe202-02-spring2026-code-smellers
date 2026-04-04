@@ -80,10 +80,10 @@ export const registerUser = async (req: Request, res: Response) => {
         //JSON-format for insert new user row into "users" DB table
         // Note: id is managed by Supabase Auth, so we omit it during insert
 		const userRecord = {
+			id: authUserId,
 			email: registerReqDetails.email as string,
 			display_name: registerReqDetails.displayName as string,
 			is_admin: registerReqDetails.is_admin,
-			password_hash: "", //set up password hashing when Supabase table is finalized
 		} as any; //Type assertion to bypass Supabase type checking
         //Insert user row into DB with supabase
 				// RECOMMENDATION: Use Postgres trigger to automatically create user record in "users" table 
