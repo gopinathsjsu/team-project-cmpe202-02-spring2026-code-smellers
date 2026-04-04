@@ -1,9 +1,70 @@
 import { Request, Response } from "express";
 import { User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { CreateEventRequestBody } from "../types/event.types";
 import { getSupabaseClient } from "../lib/supabase";
+import type { Database } from "../types/database.types";
 
 type RequestWithUser = Request & { user?: User };
+
+//Helper function to get existing location or create a new one if it doesn't exist
+async function getOrCreateLocation(
+  supabase: SupabaseClient<Database>,
+  location: {
+    type?: "in-person" | "virtual";
+    venueName?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  }
+): Promise<number | null> {
+  const locationType = location.type ?? "in-person";
+  const venueName = location.venueName ?? null;
+  const address = location.address ?? null;
+
+  // Only query for existing location if venueName and address are provided
+  if (venueName && address) {
+    const { data: existingLocation, error: queryError } = await supabase
+      .from("locations")
+      .select("id")
+      .eq("type", locationType)
+      .eq("venue_name", venueName)
+      .eq("address", address)
+      .single();
+
+    // If location found, return its id
+    if (existingLocation) {
+      return existingLocation.id;
+    }
+
+    // If not found (404 error), continue to insert
+    if (queryError?.code !== "PGRST116") {
+      // Other query errors
+      if (queryError) {
+        throw new Error(`Location query failed: ${queryError.message}`);
+      }
+    }
+  }
+
+  // Insert a new location (either venueName/address are missing or no match was found)
+  const { data: createdLocation, error: insertError } = await supabase
+    .from("locations")
+    .insert({
+      type: locationType,
+      venue_name: venueName,
+      address: address,
+      latitutde: location.latitude ?? null,
+      longitude: location.longitude ?? null,
+    } as any)
+    .select("id")
+    .single();
+
+  if (insertError) {
+    throw new Error(`Location insert failed: ${insertError.message}`);
+  }
+
+  return createdLocation?.id ?? null;
+}
 
 //Validation function for expected Event Create Request content
 function validateCreateEventBody(body: CreateEventRequestBody): string | null {
@@ -82,27 +143,15 @@ export const createEvent = async (req: Request, res: Response) => {
     const supabase = getSupabaseClient();
     let locationId: number | null = null;
 
-    //Create location if location details are provided
+    //Get or create location if location details are provided
     if (body.location) {
-      const locationType = body.location.type ?? "in-person";
-      
-      const { data: createdLocation, error: locationError } = await supabase
-        .from("locations")
-        .insert({
-          type: locationType,
-          venue_name: body.location.venueName ?? null,
-          address: body.location.address ?? null,
-          latitude: body.location.latitude ?? null,
-          longitude: body.location.longitude ?? null,
-        } as any)
-        .select("id")
-        .single();
-
-      if (locationError) {
-        return res.status(400).json({ error: `Location creation failed: ${locationError.message}` });
+      try {
+        locationId = await getOrCreateLocation(supabase, body.location);
+      } catch (error) {
+        return res.status(400).json({ 
+          error: error instanceof Error ? error.message : "Location operation failed" 
+        });
       }
-
-      locationId = createdLocation?.id ?? null;
     }
 
     //Build event insert payload matching database schema
