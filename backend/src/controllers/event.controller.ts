@@ -68,12 +68,11 @@ export const createEvent = async (req: Request, res: Response) => {
       return res.status(400).json({ error: validationError });
     }
 
-    //TODO: Get organizer_id from authenticated user context
-    // For now, returning 500 as placeholder
-    const organizerId = req.headers["x-organizer-id"] as string;
+    //Use the authenticated Supabase user as the organizer
+    const organizerId = req.user?.id;
     if (!organizerId) {
-      return res.status(500).json({ 
-        error: "Organizer ID not found in request context. Auth middleware not implemented yet." 
+      return res.status(401).json({
+        error: "Authentication required",
       });
     }
 
