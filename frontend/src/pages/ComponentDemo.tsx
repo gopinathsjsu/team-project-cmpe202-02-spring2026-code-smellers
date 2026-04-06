@@ -190,7 +190,7 @@ export default function ComponentDemo() {
       </section>
 
       {/* Navbar */}
-      <section className="mt-12">
+      <section className="relative left-1/2 mt-12 w-screen -translate-x-1/2 px-4 sm:px-6 lg:px-8">
         <h2 className="font-display text-xl font-semibold text-brand-800">Navbar</h2>
         <p className="mt-1 text-sm text-neutral-600">
           <code className="rounded bg-neutral-200 px-1">src/components/navbar</code> — sticky
@@ -205,7 +205,7 @@ export default function ComponentDemo() {
         </div>
         <div className="mt-4 overflow-hidden rounded-xl border-2 border-neutral-200">
           <p className="border-b border-neutral-200 bg-neutral-100 px-3 py-2 text-xs font-medium text-neutral-600">
-            Logged-in state (avatar)
+            Logged-in state (Create Event + avatar)
           </p>
           <Navbar
             isLoggedIn={true}

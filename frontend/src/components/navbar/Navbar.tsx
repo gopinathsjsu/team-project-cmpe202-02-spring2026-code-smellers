@@ -39,9 +39,25 @@ function LocationIcon() {
   );
 }
 
+function NotificationBellIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-6 w-6"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path
+        d="M10 2.9C7.86 2.9 6.1 4.66 6.1 6.8V8.88C6.1 10.24 5.61 11.55 4.73 12.58L3.74 13.75C3.47 14.08 3.41 14.53 3.59 14.91C3.77 15.29 4.14 15.53 4.56 15.53H15.44C15.86 15.53 16.23 15.29 16.41 14.91C16.59 14.53 16.53 14.08 16.26 13.75L15.27 12.58C14.39 11.55 13.9 10.24 13.9 8.88V6.8C13.9 4.66 12.14 2.9 10 2.9Z"
+      />
+      <path d="M8.2 16.1C8.37 17.02 9.1 17.7 10 17.7C10.9 17.7 11.63 17.02 11.8 16.1H8.2Z" />
+    </svg>
+  );
+}
+
 function getInitials(name?: string) {
   if (!name) {
-    return "EV";
+    return "ED";
   }
 
   return name
@@ -109,7 +125,7 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
               to="/"
               className="font-display text-2xl font-bold tracking-tight text-brand-800 transition-colors duration-fast hover:text-brand-700"
             >
-              Evently
+              Eventdull
             </Link>
           </div>
 
@@ -127,20 +143,35 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
             </button>
 
             {isLoggedIn ? (
-              <div
-                className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white shadow-soft"
-                aria-label={`Signed in as ${user?.name ?? "Evently user"}`}
-                title={user?.name ?? "Evently user"}
-              >
-                {initials}
-              </div>
+              <>
+                <NavLink to="/CreateEvent">
+                  <Button variant="outline" size="sm">Create Event</Button>
+                </NavLink>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-sm text-brand-700 transition-colors duration-fast hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                  aria-label="Notifications"
+                >
+                  <NotificationBellIcon />
+                </button>
+                <div
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white shadow-soft"
+                  aria-label={`Signed in as ${user?.name ?? "Eventdull user"}`}
+                  title={user?.name ?? "Eventdull user"}
+                >
+                  {initials}
+                </div>
+              </>
             ) : (
               <>
+                <NavLink to="/login">
+                  <Button variant="outline" size="sm">Create Event</Button>
+                </NavLink>
                 <NavLink to="/login">
                   <Button variant="outline" size="sm">Log in</Button>
                 </NavLink>
                 <NavLink to="/register">
-                  <Button variant="primary" size="sm">Sign up</Button>
+                  <Button variant="outline" size="sm">Sign up</Button>
                 </NavLink>
               </>
             )}

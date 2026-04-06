@@ -173,7 +173,7 @@ import { Footer } from "@/components/footer";
 />
 ```
 
-- **columns** (optional): array of `{ heading: string; links: FooterLink[] }`. Each link is `{ label, href, external? }`. Omit to use the default Evently columns.
+- **columns** (optional): array of `{ heading: string; links: FooterLink[] }`. Each link is `{ label, href, external? }`. Omit to use the default Eventdull columns.
 
 ## Guidance
 
