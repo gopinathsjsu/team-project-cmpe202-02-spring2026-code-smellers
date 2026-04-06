@@ -1,11 +1,16 @@
 export interface CreateEventRequestBody {
   title?: string;
   description?: string;
-  categoryId?: string;
-  organizerId?: string;
+  category?: "music" | "nightlife" | "performing and visual arts" | "holidays" | "dating" | "hobbies" | "business" | "food and drink" | "charity";
   startDateTime?: string;
   endDateTime?: string;
-  location?: unknown;
   capacity?: number;
   imageUrl?: string;
+  location?: {
+    type?: "in-person" | "virtual";
+    venueName?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
 }
