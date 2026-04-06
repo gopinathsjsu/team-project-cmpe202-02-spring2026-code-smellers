@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev src/server.ts",
+    "clean": "rm -rf dist",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest",

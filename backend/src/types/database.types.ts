@@ -27,7 +27,7 @@ export type Database = {
           id: number
           image_url: string | null
           location_id: number | null
-          organizer_id: number
+          organizer_id: string
           rsvp_count: number | null
           start_date_time: string | null
           title: string
@@ -44,7 +44,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           location_id?: number | null
-          organizer_id: number
+          organizer_id: string
           rsvp_count?: number | null
           start_date_time?: string | null
           title: string
@@ -61,24 +61,24 @@ export type Database = {
           id?: number
           image_url?: string | null
           location_id?: number | null
-          organizer_id?: number
+          organizer_id?: string
           rsvp_count?: number | null
           start_date_time?: string | null
           title?: string
         }
         Relationships: [
           {
-            foreignKeyName: "event_organizer_id_fkey"
-            columns: ["organizer_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "events_location_fkey"
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -116,7 +116,7 @@ export type Database = {
       tickets: {
         Row: {
           created_at: string
-          customer_id: number
+          customer_id: string | null
           event_id: number
           id: number
           is_email_sent: boolean | null
@@ -124,7 +124,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          customer_id: number
+          customer_id?: string | null
           event_id: number
           id?: number
           is_email_sent?: boolean | null
@@ -132,7 +132,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          customer_id?: number
+          customer_id?: string | null
           event_id?: number
           id?: number
           is_email_sent?: boolean | null
@@ -160,25 +160,22 @@ export type Database = {
           created_at: string
           display_name: string
           email: string
-          id: number
+          id: string
           is_admin: boolean
-          password_hash: string
         }
         Insert: {
           created_at?: string
           display_name: string
           email: string
-          id?: number
+          id?: string
           is_admin?: boolean
-          password_hash: string
         }
         Update: {
           created_at?: string
           display_name?: string
           email?: string
-          id?: number
+          id?: string
           is_admin?: boolean
-          password_hash?: string
         }
         Relationships: []
       }

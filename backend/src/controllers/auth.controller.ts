@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getSupabaseClient } from "../lib/supabase";
-import { RegisterRequestBody } from "../types/auth.types";
+import { LoginRequestBody, RegisterRequestBody } from "../types/auth.types";
 
 //Validation function for expected Register Request content
 function validateRegisterBody(body: RegisterRequestBody): string | null {
@@ -19,6 +19,17 @@ function validateRegisterBody(body: RegisterRequestBody): string | null {
 		return `Password must be at least ${passwordLengthMin} characters`;
 	}
     //other validation rules can be added here (e.g. email format, password rules, etc.)
+	return null;
+}
+
+function validateLoginBody(body: LoginRequestBody): string | null {
+	if (!body.email) {
+		return "Missing required field: email";
+	}
+	if (!body.password) {
+		return "Missing required field: password";
+	}
+
 	return null;
 }
 
@@ -50,7 +61,7 @@ export const registerUser = async (req: Request, res: Response) => {
 			options: {
 				data: {
 					displayName: registerReqDetails.displayName,
-					role: registerReqDetails.role ?? "attendee", //default to "attendee" role
+					is_admin: registerReqDetails.is_admin,
 				},
 			},
 		});
@@ -67,16 +78,22 @@ export const registerUser = async (req: Request, res: Response) => {
 		}
 
         //JSON-format for insert new user row into "users" DB table
+        // Note: id is managed by Supabase Auth, so we omit it during insert
 		const userRecord = {
-			userId: authUserId,
-			email: registerReqDetails.email,
-			displayName: registerReqDetails.displayName,
-			role: registerReqDetails.role ?? "attendee",
-		};
+			id: authUserId,
+			email: registerReqDetails.email as string,
+			display_name: registerReqDetails.displayName as string,
+			is_admin: registerReqDetails.is_admin,
+		} as any; //Type assertion to bypass Supabase type checking
         //Insert user row into DB with supabase
+				// RECOMMENDATION: Use Postgres trigger to automatically create user record in "users" table 
+				// upon new auth entry creation in Supabase, instead of doing it manually here. This would ensure 
+				// data consistency and reduce potential points of failure.
 		const { data: createdUser, error: createUserError } = await supabase
 			.from("users")
-			.insert(userRecord)
+			// FIXED: Supabase types was complaining. userRecord must match the DB table schema exactly, 
+			// including required columns.
+			.insert(userRecord) 
 			.select("*")
 			.single();
         //ErrorCheck: DB entry response error for creating user record in "users" table
@@ -88,6 +105,43 @@ export const registerUser = async (req: Request, res: Response) => {
 		return res.status(201).json(createdUser);
 	} catch (error) { 
         //Catch-all error handling
+		return res.status(500).json({
+			error: error instanceof Error ? error.message : "Unexpected error",
+		});
+	}
+};
+
+/*
+loginUser endpoint function has the following possible response codes:
+200:  -Successful user login (returns user and session data as JSON)
+400:  -Invalid login content
+      -Supabase auth sign-in error
+500:  -Catch-all for unexpected errors
+*/
+export const loginUser = async (req: Request, res: Response) => {
+	try {
+		const loginReqDetails = req.body as LoginRequestBody;
+
+		const invalidRequest = validateLoginBody(loginReqDetails);
+		if (invalidRequest) {
+			return res.status(400).json({ error: invalidRequest });
+		}
+
+		const supabase = getSupabaseClient();
+		const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+			email: loginReqDetails.email,
+			password: loginReqDetails.password,
+		});
+
+		if (signInError) {
+			return res.status(400).json({ error: signInError.message });
+		}
+
+		return res.status(200).json({
+			user: signInData.user,
+			session: signInData.session,
+		});
+	} catch (error) {
 		return res.status(500).json({
 			error: error instanceof Error ? error.message : "Unexpected error",
 		});
