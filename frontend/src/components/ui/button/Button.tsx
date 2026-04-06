@@ -64,7 +64,7 @@ export function Button({
       disabled={isDisabled}
       aria-busy={isLoading}
       className={[
-        "inline-flex items-center justify-center font-semibold rounded-sm border border-transparent transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex items-center justify-center !text-sm !font-semibold tracking-normal rounded-sm border border-transparent transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
         variantClasses[variant],
         sizeClasses[size],
         fullWidth && "w-full",
