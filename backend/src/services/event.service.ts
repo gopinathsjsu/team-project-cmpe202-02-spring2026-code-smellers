@@ -40,11 +40,16 @@ async function getOrCreateLocation(
   const address = location.address ?? null;
 
   if (venueName && address) {
+    // const { data: existingLocation, error: queryError } = await supabase
+    //   .from("locations")
+    //   .select("id")
+    //   .eq("type", locationType)
+    //   .eq("venue_name", venueName)
+    //   .eq("address", address)
+    //   .single();
     const { data: existingLocation, error: queryError } = await supabase
       .from("locations")
       .select("id")
-      .eq("type", locationType)
-      .eq("venue_name", venueName)
       .eq("address", address)
       .single();
 
