@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { User } from "@supabase/supabase-js";
 import { CreateEventRequestBody } from "../types/event.types";
 import * as eventService from "../services/event.service";
+import { Constants } from "../types/database.types";
 
 type RequestWithUser = Request & { user?: User };
 
@@ -22,6 +23,12 @@ export const searchApprovedEvents = async (req: Request, res: Response) => {
       error: err instanceof Error ? err.message : "Unexpected error",
     });
   }
+};
+
+/** Active event categories from DB enum (`event_category`), excluding unused `charity`. */
+export const getEventCategories = (_req: Request, res: Response) => {
+  const categories = Constants.public.Enums.event_category.filter((c) => c !== "charity");
+  res.json({ categories });
 };
 
 /* SAMPLE CODE - NOT CORRECT*/

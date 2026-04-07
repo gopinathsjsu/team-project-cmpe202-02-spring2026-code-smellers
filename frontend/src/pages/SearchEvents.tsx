@@ -10,11 +10,15 @@ export default function SearchEvents() {
     () => ({
       query: searchParams.get("q") ?? "",
       location: searchParams.get("loc") ?? "",
+      category: searchParams.get("category") ?? "",
     }),
     [searchParams],
   );
 
-  const { data, loading, error } = useEventSearch(params);
+  const { data, loading, error } = useEventSearch({
+    query: params.query,
+    location: params.location,
+  });
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -23,6 +27,12 @@ export default function SearchEvents() {
       </h1>
       <p className="mt-2 text-sm text-neutral-600">
         Query: {params.query || "(empty)"} · Location: {params.location || "(empty)"}
+        {params.category ? (
+          <>
+            {" "}
+            · Category: <span className="font-medium text-neutral-800">{params.category}</span>
+          </>
+        ) : null}
       </p>
 
       {loading ? (

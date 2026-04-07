@@ -191,12 +191,12 @@ export type Database = {
       event_category:
         | "music"
         | "nightlife"
-        | "performing and visual arts"
+        | "art"
         | "holidays"
-        | "dating"
+        | "sports"
         | "hobbies"
         | "business"
-        | "food and drink"
+        | "food"
         | "charity"
       location_type: "in-person" | "virtual"
       ticket_rsvp_status: "pending" | "confirmed" | "canceled" | "attended"
@@ -331,12 +331,12 @@ export const Constants = {
       event_category: [
         "music",
         "nightlife",
-        "performing and visual arts",
+        "art",
         "holidays",
-        "dating",
+        "sports",
         "hobbies",
         "business",
-        "food and drink",
+        "food",
         "charity",
       ],
       location_type: ["in-person", "virtual"],
