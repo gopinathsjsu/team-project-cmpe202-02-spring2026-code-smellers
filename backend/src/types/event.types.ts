@@ -1,7 +1,7 @@
 export interface CreateEventRequestBody {
   title?: string;
   description?: string;
-  category?: "music" | "nightlife" | "performing and visual arts" | "holidays" | "dating" | "hobbies" | "business" | "food and drink" | "charity";
+  category?: "music" | "nightlife" | "art" | "holidays" | "sports" | "hobbies" | "business" | "food" | "charity";
   startDateTime?: string;
   endDateTime?: string;
   capacity?: number;

@@ -11,6 +11,7 @@ import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Forgot from "./pages/Forgot.tsx";
+import SearchResults from "./pages/SearchResults.tsx";
 
 import { useLocation } from "react-router";
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="CreateEvent" element={<CreateEvent />} />
           <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
+          <Route path="search" element={<SearchResults />} />
         </Routes>
       </main>
       {!hideHeaderFooter && <Footer />}
