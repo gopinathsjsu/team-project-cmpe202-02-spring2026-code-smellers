@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router";
+import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { Footer } from "./components/footer";
 import { Navbar } from "./components/navbar";
 import DashboardAdmin from "./pages/DashboardAdmin.tsx";
@@ -11,16 +11,28 @@ import Home from "./pages/Home.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Forgot from "./pages/Forgot.tsx";
-
-import { useLocation } from "react-router";
+import SearchEvents from "./pages/SearchEvents.tsx";
 
 export default function App() {
-  const location = useLocation();
-  const hideHeaderFooter = ['/register', '/login', '/forgot'].includes(location.pathname);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const hideHeaderFooter = ["/register", "/login", "/forgot"].includes(pathname);
+
+  function handleNavbarSearch(params: { query: string; location: string }) {
+    const searchParams = new URLSearchParams();
+    const q = params.query.trim();
+    const loc = params.location.trim();
+    if (q) searchParams.set("q", q);
+    if (loc) searchParams.set("loc", loc);
+    const search = searchParams.toString();
+    navigate({ pathname: "/search", search: search ? `?${search}` : "" });
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-base text-neutral-900">
-      {!hideHeaderFooter && <Navbar isLoggedIn={false} onSearch={(query: string) => console.log(query)} />}
+      {!hideHeaderFooter && (
+        <Navbar isLoggedIn={false} onSearch={handleNavbarSearch} />
+      )}
       <main className="flex-1">
         <Routes>
           <Route index element={<Home />} />
@@ -33,6 +45,7 @@ export default function App() {
           <Route path="CreateEvent" element={<CreateEvent />} />
           <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
+          <Route path="search" element={<SearchEvents />} />
         </Routes>
       </main>
       {!hideHeaderFooter && <Footer />}
