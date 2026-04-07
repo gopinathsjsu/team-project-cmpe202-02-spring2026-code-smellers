@@ -200,7 +200,9 @@ export default function ComponentDemo() {
         <div className="mt-4 overflow-hidden rounded-xl border-2 border-neutral-200">
           <Navbar
             isLoggedIn={false}
-            onSearch={(q: string) => console.log("Search:", q)}
+            onSearch={({ query, location }) =>
+              console.log("Search:", query, location)
+            }
           />
         </div>
         <div className="mt-4 overflow-hidden rounded-xl border-2 border-neutral-200">
@@ -210,7 +212,9 @@ export default function ComponentDemo() {
           <Navbar
             isLoggedIn={true}
             user={{ name: "Jane Doe" }}
-            onSearch={(q: string) => console.log("Search:", q)}
+            onSearch={({ query, location }) =>
+              console.log("Search:", query, location)
+            }
           />
         </div>
       </section>

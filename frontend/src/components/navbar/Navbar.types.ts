@@ -5,6 +5,7 @@ export type User = {
 
 export type NavbarProps = {
   isLoggedIn: boolean;
-  onSearch?: (query: string) => void;
+  /** Parent decides navigation / side effects; Navbar only collects query + location. */
+  onSearch?: (params: { query: string; location: string }) => void;
   user?: User;
 };
