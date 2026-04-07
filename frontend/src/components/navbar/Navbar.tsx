@@ -77,7 +77,6 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    onSearch?.(value);
   };
 
   const searchControl = (
@@ -111,6 +110,18 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
             placeholder="San Jose"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
+        </label>
+
+        <label className="flex items-center gap-2 px-3 py-2">
+          <Button
+            type="submit"
+            className="h-9 px-3 text-sm active:bg-brand-800 cursor-pointer"
+            onClick={() =>
+              onSearch?.({ query: searchQuery, location: locationQuery })
+            }
+          >
+            Search
+          </Button>
         </label>
       </div>
     </div>
@@ -149,13 +160,13 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
                 </NavLink>
                 <button
                   type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-sm text-brand-700 transition-colors duration-fast hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-sm text-brand-700 transition-colors duration-fast hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 cursor-pointer"
                   aria-label="Notifications"
                 >
                   <NotificationBellIcon />
                 </button>
                 <div
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white shadow-soft"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white shadow-soft cursor-pointer"
                   aria-label={`Signed in as ${user?.name ?? "Eventdull user"}`}
                   title={user?.name ?? "Eventdull user"}
                 >
@@ -165,13 +176,13 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
             ) : (
               <>
                 <NavLink to="/login">
-                  <Button variant="outline" size="sm">Create Event</Button>
+                  <Button variant="outline" size="sm" className="cursor-pointer">Create Event</Button>
                 </NavLink>
                 <NavLink to="/login">
-                  <Button variant="outline" size="sm">Log in</Button>
+                  <Button variant="outline" size="sm" className="cursor-pointer">Log in</Button>
                 </NavLink>
                 <NavLink to="/register">
-                  <Button variant="outline" size="sm">Sign up</Button>
+                  <Button variant="outline" size="sm" className="cursor-pointer">Sign up</Button>
                 </NavLink>
               </>
             )}
@@ -184,5 +195,5 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
   );
 }
 
-// <Navbar isLoggedIn={false} onSearch={(q) => console.log(q)} />
-// <Navbar isLoggedIn={true} user={{ name: "Jane Doe" }} onSearch={(q) => console.log(q)} />
+// <Navbar isLoggedIn={false} onSearch={({ query, location }) => ...} />
+// <Navbar isLoggedIn={true} user={{ name: "Jane Doe" }} onSearch={({ query, location }) => ...} />
