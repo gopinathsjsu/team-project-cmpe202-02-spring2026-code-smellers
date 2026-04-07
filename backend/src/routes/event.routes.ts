@@ -7,6 +7,7 @@ const router = Router();
 //These routes will use "/events___" as prefix -> see routes/index.ts
 router.get("/categories", eventController.getEventCategories);
 router.get("/", eventController.getEvents);
+router.get("/search", eventController.searchApprovedEvents);
 router.get("/:eventId", eventController.getEventById);
 router.post("/", requireAuth, eventController.createEvent);
 
