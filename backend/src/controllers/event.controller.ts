@@ -3,7 +3,7 @@ import { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CreateEventRequestBody } from "../types/event.types";
 import { getSupabaseClient } from "../lib/supabase";
-import type { Database } from "../types/database.types";
+import { Constants, type Database } from "../types/database.types";
 
 type RequestWithUser = Request & { user?: User };
 
@@ -101,6 +101,12 @@ function validateCreateEventBody(body: CreateEventRequestBody): string | null {
 
   return null;
 }
+
+/** Active event categories from DB enum (`event_category`), excluding unused `charity`. */
+export const getEventCategories = (_req: Request, res: Response) => {
+  const categories = Constants.public.Enums.event_category.filter((c) => c !== "charity");
+  res.json({ categories });
+};
 
 /* SAMPLE CODE - NOT CORRECT*/
 export const getEvents = async (req: Request, res: Response) => {

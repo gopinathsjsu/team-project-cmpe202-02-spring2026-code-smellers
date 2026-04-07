@@ -1,10 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { EventCard } from "../components/ui/event-card";
+import { apiUrl } from "../lib/api";
 
-type Category = {
-  name: string;
-  icon: "music" | "sports" | "food" | "art" | "tech" | "wellness" | "business" | "community";
+type CategoryIconKey =
+  | "music"
+  | "sports"
+  | "food"
+  | "art"
+  | "tech"
+  | "wellness"
+  | "business"
+  | "community"
+  | "nightlife"
+  | "hobbies"
+  | "holidays";
+
+/** Homepage category row order (API may return enum order). */
+const CATEGORY_DISPLAY_ORDER = [
+  "music",
+  "sports",
+  "art",
+  "food",
+  "business",
+  "nightlife",
+  "hobbies",
+  "holidays",
+] as const;
+
+function sortCategoriesForDisplay(slugs: string[]): string[] {
+  const rank = new Map<string, number>(CATEGORY_DISPLAY_ORDER.map((s, i) => [s, i]));
+  const after = CATEGORY_DISPLAY_ORDER.length;
+  return [...slugs].sort((a, b) => {
+    const ra = rank.get(a) ?? after;
+    const rb = rank.get(b) ?? after;
+    if (ra !== rb) return ra - rb;
+    return a.localeCompare(b);
+  });
+}
+
+function formatCategoryLabel(slug: string) {
+  return slug.replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+/** Map DB `event_category` slugs to homepage icons (1:1 for known categories). */
+const CATEGORY_ICON_MAP: Record<string, CategoryIconKey> = {
+  music: "music",
+  sports: "sports",
+  art: "art",
+  food: "food",
+  business: "business",
+  nightlife: "nightlife",
+  hobbies: "hobbies",
+  holidays: "holidays",
 };
+
+function categoryIconForSlug(slug: string): CategoryIconKey {
+  return CATEGORY_ICON_MAP[slug] ?? "community";
+}
 
 type HomeEvent = {
   id: string;
@@ -13,17 +66,6 @@ type HomeEvent = {
   location: string;
   imageUrl: string;
 };
-
-const categories: Category[] = [
-  { name: "Music", icon: "music" },
-  { name: "Sports", icon: "sports" },
-  { name: "Food", icon: "food" },
-  { name: "Art", icon: "art" },
-  { name: "Tech", icon: "tech" },
-  { name: "Wellness", icon: "wellness" },
-  { name: "Business", icon: "business" },
-  { name: "Community", icon: "community" },
-];
 
 const nearbyEvents: HomeEvent[] = [
   { id: "1", title: "Downtown Jazz Night", date: "Fri, Apr 4 · 7:30 PM", location: "San Jose, CA", imageUrl: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=1200&q=80" },
@@ -36,7 +78,7 @@ const nearbyEvents: HomeEvent[] = [
   { id: "8", title: "Community Art Walk", date: "Fri, Apr 11 · 5:30 PM", location: "Cupertino, CA", imageUrl: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&q=80" },
 ];
 
-function CategoryIcon({ type }: { type: Category["icon"] }) {
+function CategoryIcon({ type }: { type: CategoryIconKey }) {
   const iconBaseClass = "h-7 w-7";
   const iconProps = {
     className: iconBaseClass,
@@ -105,6 +147,36 @@ function CategoryIcon({ type }: { type: Category["icon"] }) {
     );
   }
 
+  if (type === "nightlife") {
+    return (
+      <svg {...iconProps}>
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        <path d="M17.5 4.5 18 6l1.5.5L18 7l-.5 1.5L17 7l-1.5-.5L17 6l.5-1.5Z" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+
+  if (type === "hobbies") {
+    return (
+      <svg {...iconProps}>
+        <rect x="5" y="5" width="14" height="14" rx="2" />
+        <circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none" />
+        <circle cx="15" cy="15" r="1.2" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+
+  if (type === "holidays") {
+    return (
+      <svg {...iconProps}>
+        <path d="M12 3v4M12 21V10" />
+        <path d="M8.5 7h7a2.5 2.5 0 0 0 0-5c-1.6 0-2.5 2-3.5 3.5C11 4 10 2 8.5 2a2.5 2.5 0 0 0 0 5Z" />
+        <rect x="3" y="10" width="18" height="11" rx="1.5" />
+        <path d="M3 14h18" />
+      </svg>
+    );
+  }
+
   if (type === "community") {
     return (
       <svg {...iconProps}>
@@ -125,12 +197,48 @@ function CategoryIcon({ type }: { type: Category["icon"] }) {
 
 export default function Home() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCategories() {
+      try {
+        const res = await fetch(apiUrl("/api/events/categories"));
+        if (!res.ok) {
+          throw new Error(`Request failed (${res.status})`);
+        }
+        const data = (await res.json()) as { categories?: unknown };
+        const list = Array.isArray(data.categories) ? data.categories.filter((c): c is string => typeof c === "string") : [];
+        if (!cancelled) {
+          setCategorySlugs(list);
+          setCategoriesError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCategorySlugs([]);
+          setCategoriesError("Could not load categories.");
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false);
+        }
+      }
+    }
+    void loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleSaved = (id: string) => {
     setSavedIds((previous) =>
       previous.includes(id) ? previous.filter((savedId) => savedId !== id) : [...previous, id],
     );
   };
+
+  const orderedCategorySlugs = sortCategoriesForDisplay(categorySlugs);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -155,21 +263,32 @@ export default function Home() {
 
       <section className="mt-10">
         <h2 className="font-display text-2xl font-bold text-neutral-900">Browse by category</h2>
-        <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-          {categories.map((category) => (
-            <button
-              key={category.name}
-              type="button"
-              className="group flex flex-col items-center gap-2 rounded-lg py-2 transition-transform duration-fast hover:-translate-y-0.5"
-              aria-label={`View ${category.name} events`}
-            >
-              <span className="flex h-20 w-20 items-center justify-center rounded-full border border-brand-100 bg-gradient-to-br from-white to-brand-50/70 text-brand-700 shadow-soft transition-all duration-fast group-hover:-translate-y-0.5 group-hover:border-brand-300 group-hover:from-brand-50 group-hover:to-brand-100/70 group-hover:text-brand-800 group-hover:shadow-elevated">
-                <CategoryIcon type={category.icon} />
-              </span>
-              <span className="text-sm font-semibold text-neutral-700">{category.name}</span>
-            </button>
-          ))}
-        </div>
+        {categoriesLoading ? (
+          <p className="mt-5 text-sm text-neutral-500">Loading categories…</p>
+        ) : categoriesError ? (
+          <p className="mt-5 text-sm text-red-600" role="alert">
+            {categoriesError}
+          </p>
+        ) : (
+          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+            {orderedCategorySlugs.map((slug) => {
+              const label = formatCategoryLabel(slug);
+              return (
+                <Link
+                  key={slug}
+                  to={`/search?category=${encodeURIComponent(slug)}`}
+                  className="group flex flex-col items-center gap-2 rounded-lg py-2"
+                  aria-label={`View ${label} events`}
+                >
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full border border-brand-100 bg-gradient-to-br from-white to-brand-50/70 text-brand-700 transition-all duration-fast group-hover:border-brand-300 group-hover:from-brand-50 group-hover:to-brand-100/70 group-hover:text-brand-800">
+                    <CategoryIcon type={categoryIconForSlug(slug)} />
+                  </span>
+                  <span className="text-sm font-semibold text-neutral-700">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="mt-12">
