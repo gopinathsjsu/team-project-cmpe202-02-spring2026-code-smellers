@@ -259,3 +259,27 @@ export async function createEventForOrganizer(
 
   return { ok: true, event: createdEvent };
 }
+
+export async function getEventById(eventId: number) {
+  const supabase = getSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+        id,
+        title,
+        description,
+        start_date_time,
+        image_url,
+        locations ( venue_name, address )
+      `,
+    )
+    .eq("id", eventId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, event: data };
+}
