@@ -23,7 +23,7 @@ function LocationIcon() {
   return (
     <svg
       aria-hidden="true"
-      className="h-5 w-5"
+      className="h-4 w-4"
       viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"
@@ -80,12 +80,9 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
   };
 
   const searchControl = (
-    <div className="w-full rounded-sm border border-neutral-300 bg-surface-raised shadow-soft transition-colors duration-fast focus-within:border-brand-500">
+    <div className="w-full rounded-sm border border-neutral-300 bg-surface-raised transition-colors duration-fast focus-within:border-brand-500">
       <div className="flex flex-col md:flex-row md:items-center">
-        <label className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2">
-          <span className="shrink-0 text-neutral-500">
-            <SearchIcon />
-          </span>
+        <label className="flex min-w-0 flex-1 items-center px-3 py-1.5">
           <input
             type="search"
             value={searchQuery}
@@ -95,11 +92,11 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
           />
         </label>
 
-        <div className="border-t border-neutral-200 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 md:border-t-0 md:border-x">
+        <div className="border-t border-neutral-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 md:border-t-0 md:border-x">
           in
         </div>
 
-        <label className="flex min-w-0 items-center gap-2 px-3 py-2 md:w-56">
+        <label className="flex min-w-0 items-center gap-2 px-3 py-1.5 md:w-56">
           <span className="shrink-0 text-neutral-500">
             <LocationIcon />
           </span>
@@ -112,23 +109,24 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
           />
         </label>
 
-        <label className="flex items-center gap-2 px-3 py-2">
+        <div className="flex items-center px-3 py-1.5">
           <Button
-            type="submit"
-            className="h-9 px-3 text-sm active:bg-brand-800 cursor-pointer"
+            type="button"
+            aria-label="Search"
+            className="h-7 w-7 shrink-0 !gap-0 !px-0 !py-0 active:bg-brand-800 cursor-pointer [&_svg]:h-3.5 [&_svg]:w-3.5"
             onClick={() =>
               onSearch?.({ query: searchQuery, location: locationQuery })
             }
           >
-            Search
+            <SearchIcon />
           </Button>
-        </label>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-surface-base shadow-soft">
+    <nav className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-surface-base">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center gap-3 md:h-16 md:gap-6">
           <div className="shrink-0">
@@ -166,7 +164,7 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
                   <NotificationBellIcon />
                 </button>
                 <div
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white shadow-soft cursor-pointer"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white cursor-pointer"
                   aria-label={`Signed in as ${user?.name ?? "Eventdull user"}`}
                   title={user?.name ?? "Eventdull user"}
                 >
