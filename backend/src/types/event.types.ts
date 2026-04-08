@@ -8,6 +8,7 @@ export interface CreateEventRequestBody {
   imageUrl?: string;
   location?: {
     type?: "in-person" | "virtual";
+    queryText?: string;
     venueName?: string;
     address?: string;
     latitude?: number;
