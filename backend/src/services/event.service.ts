@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../lib/supabase";
 import type { Database } from "../types/database.types";
 import type { CreateEventRequestBody } from "../types/event.types";
+import { addressUpToCity } from "../utils/addressDisplay";
 import { searchLocationsByText } from "../utils/googlePlaces";
 
 export type EventSearchListItem = {
@@ -24,6 +25,10 @@ type EventSearchRow = {
   start_date_time: string | null;
   image_url: string | null;
   locations: LocationEmbed | LocationEmbed[] | null;
+};
+
+type EventSearchRowWithCategory = EventSearchRow & {
+  category: string | null;
 };
 
 type ResolvedLocation = {
@@ -199,7 +204,10 @@ function formatEventListLocation(loc: LocationEmbed | null): string {
   if (!loc) {
     return "Location TBA";
   }
-  const parts = [loc.venue_name, loc.address].filter(Boolean) as string[];
+  const venue = loc.venue_name?.trim();
+  const raw = loc.address?.trim();
+  const addr = raw ? addressUpToCity(raw) : "";
+  const parts = [venue, addr].filter(Boolean) as string[];
   return parts.length > 0 ? parts.join(", ") : "Location TBA";
 }
 
@@ -251,6 +259,61 @@ export async function searchApprovedEvents(
   }
 
   const events: EventSearchListItem[] = rows.map((row) => ({
+    id: String(row.id),
+    title: row.title,
+    date: formatEventListDate(row.start_date_time),
+    location: formatEventListLocation(normalizeLocationEmbed(row.locations)),
+    imageUrl: row.image_url ?? undefined,
+  }));
+
+  return { ok: true, events };
+}
+
+/** Up to 4 other approved events; prefers same `category` when provided. */
+export async function getRelatedApprovedEvents(
+  excludeEventId: number,
+  preferCategory: string | null,
+): Promise<{ ok: true; events: EventSearchListItem[] } | { ok: false; error: string }> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+        id,
+        title,
+        description,
+        start_date_time,
+        image_url,
+        category,
+        locations ( venue_name, address )
+      `,
+    )
+    .eq("approval_status", "approved")
+    .neq("id", excludeEventId)
+    .order("start_date_time", { ascending: true, nullsFirst: false })
+    .limit(48);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  const rows = (data ?? []) as EventSearchRowWithCategory[];
+
+  const sorted = preferCategory
+    ? [...rows].sort((a, b) => {
+        const aMatch = a.category === preferCategory ? 0 : 1;
+        const bMatch = b.category === preferCategory ? 0 : 1;
+        if (aMatch !== bMatch) return aMatch - bMatch;
+        const ta = a.start_date_time ? new Date(a.start_date_time).getTime() : 0;
+        const tb = b.start_date_time ? new Date(b.start_date_time).getTime() : 0;
+        return ta - tb;
+      })
+    : rows;
+
+  const picked = sorted.slice(0, 4);
+
+  const events: EventSearchListItem[] = picked.map((row) => ({
     id: String(row.id),
     title: row.title,
     date: formatEventListDate(row.start_date_time),
@@ -319,8 +382,12 @@ export async function createEventForOrganizer(
 }
 
 export async function getEventById(eventId: number) {
+  if (!Number.isFinite(eventId) || eventId <= 0) {
+    return { ok: false, error: "Event not found" };
+  }
+
   const supabase = getSupabaseClient();
-  
+
   const { data, error } = await supabase
     .from("events")
     .select(
@@ -329,14 +396,24 @@ export async function getEventById(eventId: number) {
         title,
         description,
         start_date_time,
+        end_date_time,
         image_url,
-        locations ( venue_name, address )
+        category,
+        capacity,
+        rsvp_count,
+        locations ( venue_name, address, latitutde, longitude ),
+        organizer:users!events_organizer_id_fkey ( id, display_name )
       `,
     )
-    .eq("id", eventId);
+    .eq("id", eventId)
+    .eq("approval_status", "approved")
+    .maybeSingle();
 
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!data) {
+    return { ok: false, error: "Event not found" };
   }
 
   return { ok: true, event: data };
