@@ -31,7 +31,7 @@ export function useEventSearch(params: SearchEventsParams) {
       const message = e instanceof Error ? e.message : "Search failed";
       setState({ data: null, loading: false, error: message });
     }
-  }, [params.query, params.location]);
+  }, [params.query, params.location, params.category]);
 
   useEffect(() => {
     void run();

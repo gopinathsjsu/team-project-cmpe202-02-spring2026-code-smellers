@@ -18,6 +18,7 @@ export default function SearchEvents() {
   const { data, loading, error } = useEventSearch({
     query: params.query,
     location: params.location,
+    category: params.category,
   });
 
   return (
