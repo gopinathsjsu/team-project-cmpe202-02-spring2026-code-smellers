@@ -324,10 +324,16 @@ export default function Home({ browseLocation }: HomeProps) {
           <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
             {orderedCategorySlugs.map((slug) => {
               const label = formatCategoryLabel(slug);
+              const search = new URLSearchParams();
+              search.set("category", slug);
+              const loc = browseLocation.trim();
+              if (loc) {
+                search.set("loc", loc);
+              }
               return (
                 <Link
                   key={slug}
-                  to={`/search?category=${encodeURIComponent(slug)}`}
+                  to={{ pathname: "/search", search: `?${search.toString()}` }}
                   className="group flex flex-col items-center gap-2 rounded-lg py-2"
                   aria-label={`View ${label} events`}
                 >

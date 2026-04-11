@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { EventCardProps } from "./EventCard.types";
 
@@ -87,7 +88,23 @@ export function EventCard({
     onSaveToggle?.(id);
   };
 
-  const cardImageSrc = imageUrl?.trim() || fallbackImageUrlForEventId(id);
+  const resolvedInitial =
+    imageUrl?.trim() || fallbackImageUrlForEventId(id);
+  const [cardImageSrc, setCardImageSrc] = useState(resolvedInitial);
+  const imageSwapDoneRef = useRef(false);
+
+  useEffect(() => {
+    imageSwapDoneRef.current = false;
+    setCardImageSrc(imageUrl?.trim() || fallbackImageUrlForEventId(id));
+  }, [id, imageUrl]);
+
+  const handleImageError = useCallback(() => {
+    if (imageSwapDoneRef.current) {
+      return;
+    }
+    imageSwapDoneRef.current = true;
+    setCardImageSrc(fallbackImageUrlForEventId(id));
+  }, [id]);
 
   return (
     <Link
@@ -100,6 +117,7 @@ export function EventCard({
           src={cardImageSrc}
           alt=""
           className="h-full w-full object-cover"
+          onError={handleImageError}
         />
         {onSaveToggle != null && (
           <button
