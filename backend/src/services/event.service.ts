@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../lib/supabase";
 import type { Database } from "../types/database.types";
 import type { CreateEventRequestBody } from "../types/event.types";
+import { searchLocationsByText } from "../utils/googlePlaces";
 
 export type EventSearchListItem = {
   id: string;
@@ -25,38 +26,94 @@ type EventSearchRow = {
   locations: LocationEmbed | LocationEmbed[] | null;
 };
 
+type ResolvedLocation = {
+  type: "in-person" | "virtual";
+  venueName: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+async function resolveLocationForEvent(
+  location: NonNullable<CreateEventRequestBody["location"]>,
+): Promise<ResolvedLocation> {
+  const locationType = location.type ?? "in-person";
+
+  if (locationType === "virtual") {
+    return {
+      type: "virtual",
+      venueName: location.venueName?.trim() || "Virtual Event",
+      address: location.address?.trim() || null,
+      latitude: null,
+      longitude: null,
+    };
+  }
+
+  const placesQuery =
+    location.queryText?.trim() ||
+    location.address?.trim() ||
+    location.venueName?.trim() ||
+    "";
+
+  if (!placesQuery) {
+    throw new Error("Missing query text for in-person location lookup");
+  }
+
+  const placesResult = await searchLocationsByText(placesQuery);
+  if (!placesResult.ok) {
+    throw new Error(placesResult.error);
+  }
+
+  const topPlace = placesResult.locations[0];
+  if (!topPlace) {
+    throw new Error("No matching location found from Google Places");
+  }
+
+  return {
+    type: "in-person",
+    venueName: topPlace.name,
+    address: topPlace.formattedAddress,
+    latitude: topPlace.latitude,
+    longitude: topPlace.longitude,
+  };
+}
+
 async function getOrCreateLocation(
   supabase: SupabaseClient<Database>,
   location: {
     type?: "in-person" | "virtual";
-    venueName?: string;
-    address?: string;
-    latitude?: number;
-    longitude?: number;
+    venueName?: string | null;
+    address?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   },
 ): Promise<number | null> {
   const locationType = location.type ?? "in-person";
   const venueName = location.venueName ?? null;
   const address = location.address ?? null;
 
-  if (venueName && address) {
-    const { data: existingLocation, error: queryError } = await supabase
-      .from("locations")
-      .select("id")
-      .eq("type", locationType)
-      .eq("venue_name", venueName)
-      .eq("address", address)
-      .single();
+  let existingLocationQuery = supabase
+    .from("locations")
+    .select("id")
+    .eq("type", locationType)
+    .limit(1);
 
-    if (existingLocation) {
-      return existingLocation.id;
-    }
+  existingLocationQuery = venueName
+    ? existingLocationQuery.eq("venue_name", venueName)
+    : existingLocationQuery.is("venue_name", null);
+  existingLocationQuery = address
+    ? existingLocationQuery.eq("address", address)
+    : existingLocationQuery.is("address", null);
 
-    if (queryError?.code !== "PGRST116") {
-      if (queryError) {
-        throw new Error(`Location query failed: ${queryError.message}`);
-      }
-    }
+  const { data: existingLocation, error: queryError } =
+    await existingLocationQuery.maybeSingle();
+
+  if (queryError) {
+    throw new Error(`Location query failed: ${queryError.message}`);
+  }
+
+  if (existingLocation) {
+    return existingLocation.id;
   }
 
   const { data: createdLocation, error: insertError } = await supabase
@@ -221,7 +278,8 @@ export async function createEventForOrganizer(
 
   if (body.location) {
     try {
-      locationId = await getOrCreateLocation(supabase, body.location);
+      const resolvedLocation = await resolveLocationForEvent(body.location);
+      locationId = await getOrCreateLocation(supabase, resolvedLocation);
     } catch (err) {
       return {
         ok: false,
@@ -258,4 +316,28 @@ export async function createEventForOrganizer(
   }
 
   return { ok: true, event: createdEvent };
+}
+
+export async function getEventById(eventId: number) {
+  const supabase = getSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+        id,
+        title,
+        description,
+        start_date_time,
+        image_url,
+        locations ( venue_name, address )
+      `,
+    )
+    .eq("id", eventId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, event: data };
 }
