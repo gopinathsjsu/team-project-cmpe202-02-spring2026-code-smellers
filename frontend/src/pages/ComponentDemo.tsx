@@ -11,6 +11,8 @@ export default function ComponentDemo() {
   const [searchQuery, setSearchQuery] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set(["2"]));
+  const [navbarDemoLocation, setNavbarDemoLocation] = useState("San Jose");
+  const [navbarDemoLocationB, setNavbarDemoLocationB] = useState("San Jose");
 
   const handleSaveToggle = (id: string) => {
     setSavedIds((prev) => {
@@ -200,6 +202,8 @@ export default function ComponentDemo() {
         <div className="mt-4 overflow-hidden rounded-xl border-2 border-neutral-200">
           <Navbar
             isLoggedIn={false}
+            browseLocation={navbarDemoLocation}
+            onBrowseLocationChange={setNavbarDemoLocation}
             onSearch={({ query, location }) =>
               console.log("Search:", query, location)
             }
@@ -211,6 +215,8 @@ export default function ComponentDemo() {
           </p>
           <Navbar
             isLoggedIn={true}
+            browseLocation={navbarDemoLocationB}
+            onBrowseLocationChange={setNavbarDemoLocationB}
             user={{ name: "Jane Doe" }}
             onSearch={({ query, location }) =>
               console.log("Search:", query, location)
