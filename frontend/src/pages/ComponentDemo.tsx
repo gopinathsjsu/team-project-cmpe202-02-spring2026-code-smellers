@@ -11,6 +11,8 @@ export default function ComponentDemo() {
   const [searchQuery, setSearchQuery] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set(["2"]));
+  const [navbarDemoLocation, setNavbarDemoLocation] = useState("San Jose");
+  const [navbarDemoLocationB, setNavbarDemoLocationB] = useState("San Jose");
 
   const handleSaveToggle = (id: string) => {
     setSavedIds((prev) => {
@@ -153,7 +155,9 @@ export default function ComponentDemo() {
         <h2 className="font-display text-xl font-semibold text-brand-800">EventCard</h2>
         <p className="mt-1 text-sm text-neutral-600">
           <code className="rounded bg-neutral-200 px-1">src/components/ui/event-card</code> —
-          vertical card with image, title, date, location, favorite button, and Free badge.
+          vertical card with image (optional <code className="rounded bg-neutral-200 px-1">imageUrl</code>
+          — component picks a stable placeholder when omitted), title, date, location, favorite
+          button, and Free badge.
         </p>
         <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <EventCard
@@ -168,6 +172,7 @@ export default function ComponentDemo() {
           <EventCard
             id="2"
             title="Tech Meetup: APIs & Microservices"
+            imageUrl="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&h=225&q=70"
             date="Sun, Mar 16 · 2:00 PM"
             location="San Francisco, CA"
             isSaved={savedIds.has("2")}
@@ -200,6 +205,8 @@ export default function ComponentDemo() {
         <div className="mt-4 overflow-hidden rounded-xl border-2 border-neutral-200">
           <Navbar
             isLoggedIn={false}
+            browseLocation={navbarDemoLocation}
+            onBrowseLocationChange={setNavbarDemoLocation}
             onSearch={({ query, location }) =>
               console.log("Search:", query, location)
             }
@@ -211,6 +218,8 @@ export default function ComponentDemo() {
           </p>
           <Navbar
             isLoggedIn={true}
+            browseLocation={navbarDemoLocationB}
+            onBrowseLocationChange={setNavbarDemoLocationB}
             user={{ name: "Jane Doe" }}
             onSearch={({ query, location }) =>
               console.log("Search:", query, location)

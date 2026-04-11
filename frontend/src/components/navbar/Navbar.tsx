@@ -68,9 +68,14 @@ function getInitials(name?: string) {
     .join("");
 }
 
-export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
+export function Navbar({
+  isLoggedIn,
+  browseLocation,
+  onBrowseLocationChange,
+  onSearch,
+  user,
+}: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [locationQuery, setLocationQuery] = useState("San Jose");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const initials = useMemo(() => getInitials(user?.name), [user?.name]);
@@ -102,8 +107,8 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
           </span>
           <input
             type="text"
-            value={locationQuery}
-            onChange={(event) => setLocationQuery(event.target.value)}
+            value={browseLocation}
+            onChange={(event) => onBrowseLocationChange(event.target.value)}
             placeholder="San Jose"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
@@ -115,7 +120,7 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
             aria-label="Search"
             className="h-7 w-7 shrink-0 !gap-0 !px-0 !py-0 active:bg-brand-800 cursor-pointer [&_svg]:h-3.5 [&_svg]:w-3.5"
             onClick={() =>
-              onSearch?.({ query: searchQuery, location: locationQuery })
+              onSearch?.({ query: searchQuery, location: browseLocation })
             }
           >
             <SearchIcon />
@@ -193,5 +198,4 @@ export function Navbar({ isLoggedIn, onSearch, user }: NavbarProps) {
   );
 }
 
-// <Navbar isLoggedIn={false} onSearch={({ query, location }) => ...} />
-// <Navbar isLoggedIn={true} user={{ name: "Jane Doe" }} onSearch={({ query, location }) => ...} />
+// <Navbar browseLocation={loc} onBrowseLocationChange={setLoc} isLoggedIn={false} onSearch={...} />
