@@ -59,24 +59,27 @@ function categoryIconForSlug(slug: string): CategoryIconKey {
   return CATEGORY_ICON_MAP[slug] ?? "community";
 }
 
-type HomeEvent = {
+type HomeFeedEvent = {
   id: string;
   title: string;
   date: string;
   location: string;
-  imageUrl: string;
+  imageUrl?: string;
 };
 
-const nearbyEvents: HomeEvent[] = [
-  { id: "1", title: "Downtown Jazz Night", date: "Fri, Apr 4 · 7:30 PM", location: "San Jose, CA", imageUrl: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=1200&q=80" },
-  { id: "2", title: "Weekend Farmers Market Festival", date: "Sat, Apr 5 · 9:00 AM", location: "Santa Clara, CA", imageUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1200&q=80" },
-  { id: "3", title: "Indie Film Showcase", date: "Sat, Apr 5 · 6:00 PM", location: "Campbell, CA", imageUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80" },
-  { id: "4", title: "Morning Yoga in the Park", date: "Sun, Apr 6 · 8:00 AM", location: "Sunnyvale, CA", imageUrl: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80" },
-  { id: "5", title: "Startup Networking Mixer", date: "Tue, Apr 8 · 6:30 PM", location: "Palo Alto, CA", imageUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80" },
-  { id: "6", title: "Food Truck Fiesta", date: "Wed, Apr 9 · 5:00 PM", location: "San Jose, CA", imageUrl: "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?auto=format&fit=crop&w=1200&q=80" },
-  { id: "7", title: "Live Stand-Up Comedy Night", date: "Thu, Apr 10 · 8:00 PM", location: "Mountain View, CA", imageUrl: "https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?auto=format&fit=crop&w=1200&q=80" },
-  { id: "8", title: "Community Art Walk", date: "Fri, Apr 11 · 5:30 PM", location: "Cupertino, CA", imageUrl: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&q=80" },
-];
+function isHomeFeedEvent(value: unknown): value is HomeFeedEvent {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+  const o = value as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.title === "string" &&
+    typeof o.date === "string" &&
+    typeof o.location === "string" &&
+    (o.imageUrl === undefined || typeof o.imageUrl === "string")
+  );
+}
 
 function CategoryIcon({ type }: { type: CategoryIconKey }) {
   const iconBaseClass = "h-7 w-7";
@@ -195,11 +198,19 @@ function CategoryIcon({ type }: { type: CategoryIconKey }) {
   );
 }
 
-export default function Home() {
+type HomeProps = {
+  /** Same value as the navbar location field; drives `loc` on `/api/events`. */
+  browseLocation: string;
+};
+
+export default function Home({ browseLocation }: HomeProps) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [nearbyEvents, setNearbyEvents] = useState<HomeFeedEvent[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(true);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,6 +242,46 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setNearbyLoading(true);
+    async function loadNearbyEvents() {
+      try {
+        const params = new URLSearchParams({ limit: "8" });
+        const loc = browseLocation.trim();
+        if (loc) {
+          params.set("loc", loc);
+        }
+        const res = await fetch(apiUrl(`/api/events?${params.toString()}`));
+        if (!res.ok) {
+          throw new Error(`Request failed (${res.status})`);
+        }
+        const data: unknown = await res.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid response shape");
+        }
+        const events = data.filter(isHomeFeedEvent);
+        if (!cancelled) {
+          setNearbyEvents(events);
+          setNearbyError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setNearbyEvents([]);
+          setNearbyError("Could not load events.");
+        }
+      } finally {
+        if (!cancelled) {
+          setNearbyLoading(false);
+        }
+      }
+    }
+    void loadNearbyEvents();
+    return () => {
+      cancelled = true;
+    };
+  }, [browseLocation]);
 
   const toggleSaved = (id: string) => {
     setSavedIds((previous) =>
@@ -293,21 +344,30 @@ export default function Home() {
 
       <section className="mt-12">
         <h2 className="font-display text-2xl font-bold text-neutral-900">Events near you</h2>
-        <p className="mt-1 text-sm text-neutral-500">Popular picks around San Jose and nearby cities.</p>
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {nearbyEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              id={event.id}
-              title={event.title}
-              imageUrl={event.imageUrl}
-              date={event.date}
-              location={event.location}
-              isSaved={savedIds.includes(event.id)}
-              onSaveToggle={toggleSaved}
-            />
-          ))}
-        </div>
+        {nearbyLoading ? (
+          <p className="mt-5 text-sm text-neutral-500">Loading events…</p>
+        ) : nearbyError ? (
+          <p className="mt-5 text-sm text-red-600" role="alert">
+            {nearbyError}
+          </p>
+        ) : nearbyEvents.length === 0 ? (
+          <p className="mt-5 text-sm text-neutral-500">No upcoming events yet.</p>
+        ) : (
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {nearbyEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                id={event.id}
+                title={event.title}
+                imageUrl={event.imageUrl}
+                date={event.date}
+                location={event.location}
+                isSaved={savedIds.includes(event.id)}
+                onSaveToggle={toggleSaved}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
