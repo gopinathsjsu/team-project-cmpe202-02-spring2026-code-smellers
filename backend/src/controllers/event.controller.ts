@@ -38,10 +38,36 @@ export const getEvents = async (req: Request, res: Response) => {
 /* END SAMPLE CODE */
 
 //For the event details page, frontend can display formatted version of event details
+export const getRelatedEvents = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    const idNum = Number(eventId);
+    if (!Number.isFinite(idNum)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+    const catRaw = req.query.category;
+    const category =
+      typeof catRaw === "string" && catRaw.trim() ? catRaw.trim() : null;
+    const result = await eventService.getRelatedApprovedEvents(idNum, category);
+    if (!result.ok) {
+      return res.status(400).json({ error: result.error });
+    }
+    return res.status(200).json(result.events);
+  } catch (error) {
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unexpected error",
+    });
+  }
+};
+
 export const getEventById = async (req: Request, res: Response) => {
   try {
     const { eventId } = req.params;
-    const result = await eventService.getEventById(Number(eventId));
+    const idNum = Number(eventId);
+    if (!Number.isFinite(idNum)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+    const result = await eventService.getEventById(idNum);
     if (!result.ok) {
       return res.status(404).json({ error: result.error });
     }
