@@ -5,11 +5,10 @@ Utilities are small reusable functions that do not belong to controllers,
 services, or middleware.
 
 Examples include:
-- Logging helpers
-- Date formatting utilities
-- Email helper functions
-- String formatting
-- ID generation
+
+googlePlaces.ts
+    Calls Google Places API v1 Text Search using a text query string
+    and returns either normalized location details or a structured error.
 
 Example:
 

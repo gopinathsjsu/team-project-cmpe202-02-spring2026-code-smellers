@@ -35,11 +35,24 @@ export const getEventCategories = (_req: Request, res: Response) => {
 export const getEvents = async (req: Request, res: Response) => {
   res.json({ message: "List of events" });
 };
-export const getEventById = async (req: Request, res: Response) => {
-  const { eventId } = req.params;
-  res.json({ message: `Event ${eventId}` });
-};
 /* END SAMPLE CODE */
+
+//For the event details page, frontend can display formatted version of event details
+export const getEventById = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    const result = await eventService.getEventById(Number(eventId));
+    if (!result.ok) {
+      return res.status(404).json({ error: result.error });
+    }
+    return res.status(200).json(result.event);
+  } catch (error) {
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unexpected error",
+    });
+
+  }
+};
 
 export const createEvent = async (req: Request, res: Response) => {
   try {
