@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { Footer } from "./components/footer";
 import { Navbar } from "./components/navbar";
@@ -16,6 +17,7 @@ import SearchEvents from "./pages/SearchEvents.tsx";
 export default function App() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [browseLocation, setBrowseLocation] = useState("San Jose");
   const hideHeaderFooter = ["/register", "/login", "/forgot"].includes(pathname);
 
   function handleNavbarSearch(params: { query: string; location: string }) {
@@ -31,11 +33,16 @@ export default function App() {
   return (
     <div className="flex min-h-screen flex-col bg-surface-base text-neutral-900">
       {!hideHeaderFooter && (
-        <Navbar isLoggedIn={false} onSearch={handleNavbarSearch} />
+        <Navbar
+          isLoggedIn={false}
+          browseLocation={browseLocation}
+          onBrowseLocationChange={setBrowseLocation}
+          onSearch={handleNavbarSearch}
+        />
       )}
       <main className="flex-1">
         <Routes>
-          <Route index element={<Home />} />
+          <Route index element={<Home browseLocation={browseLocation} />} />
           <Route path="register" element={<Register />} />
           <Route path="login" element={<Login />} />
           <Route path="forgot" element={<Forgot />} />

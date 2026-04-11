@@ -206,10 +206,11 @@ function formatEventListLocation(loc: LocationEmbed | null): string {
 export async function searchApprovedEvents(
   q: string,
   loc: string,
+  category?: string,
 ): Promise<{ ok: true; events: EventSearchListItem[] } | { ok: false; error: string }> {
   const supabase = getSupabaseClient();
 
-  const { data, error } = await supabase
+  let listQuery = supabase
     .from("events")
     .select(
       `
@@ -221,8 +222,13 @@ export async function searchApprovedEvents(
         locations ( venue_name, address )
       `,
     )
-    .eq("approval_status", "approved")
-    .order("start_date_time", { ascending: true, nullsFirst: false });
+    .eq("approval_status", "approved");
+
+  if (category) {
+    listQuery = listQuery.eq("category", category as Database["public"]["Enums"]["event_category"]);
+  }
+
+  const { data, error } = await listQuery.order("start_date_time", { ascending: true, nullsFirst: false });
 
   if (error) {
     return { ok: false, error: error.message };

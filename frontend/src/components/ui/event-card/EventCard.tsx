@@ -1,5 +1,24 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { EventCardProps } from "./EventCard.types";
+
+/** When `imageUrl` is missing, show one of these (picked by event id so it stays stable). */
+const EVENT_CARD_FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=70",
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=70",
+  "https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=900&q=70",
+  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=70",
+  "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=900&q=70",
+] as const;
+
+function fallbackImageUrlForEventId(eventId: string): string {
+  let h = 0;
+  for (let i = 0; i < eventId.length; i += 1) {
+    h = (h * 31 + eventId.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(h) % EVENT_CARD_FALLBACK_IMAGES.length;
+  return EVENT_CARD_FALLBACK_IMAGES[idx];
+}
 
 function CalendarIcon({ className }: { className?: string }) {
   return (
@@ -69,6 +88,24 @@ export function EventCard({
     onSaveToggle?.(id);
   };
 
+  const resolvedInitial =
+    imageUrl?.trim() || fallbackImageUrlForEventId(id);
+  const [cardImageSrc, setCardImageSrc] = useState(resolvedInitial);
+  const imageSwapDoneRef = useRef(false);
+
+  useEffect(() => {
+    imageSwapDoneRef.current = false;
+    setCardImageSrc(imageUrl?.trim() || fallbackImageUrlForEventId(id));
+  }, [id, imageUrl]);
+
+  const handleImageError = useCallback(() => {
+    if (imageSwapDoneRef.current) {
+      return;
+    }
+    imageSwapDoneRef.current = true;
+    setCardImageSrc(fallbackImageUrlForEventId(id));
+  }, [id]);
+
   return (
     <Link
       to={`/events/${id}`}
@@ -76,17 +113,12 @@ export function EventCard({
       style={{ boxShadow: "var(--ds-shadow-card)" }}
     >
       <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-brand-100">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-brand-400">
-            <CalendarIcon className="h-12 w-12" />
-          </div>
-        )}
+        <img
+          src={cardImageSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={handleImageError}
+        />
         {onSaveToggle != null && (
           <button
             type="button"
