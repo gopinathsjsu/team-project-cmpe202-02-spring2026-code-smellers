@@ -25,4 +25,14 @@ describe("GET /api/events", () => {
   it("returns 400 for non-numeric limit", async () => {
     await request(app).get("/api/events?limit=abc").expect(400);
   });
+
+  it("returns 400 for invalid category", async () => {
+    await request(app).get("/api/events?limit=8&category=invalid").expect(400);
+  });
+
+  it("accepts valid category with limit", async () => {
+    const res = await request(app).get("/api/events?limit=8&category=music").expect(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeLessThanOrEqual(8);
+  });
 });
