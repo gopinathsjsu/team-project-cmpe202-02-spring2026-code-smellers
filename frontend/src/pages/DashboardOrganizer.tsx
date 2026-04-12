@@ -138,6 +138,8 @@ function EventCard({ event }: { event: OrganizerEvent }) {
 export default function DashboardOrganizer() {
   const currentEvents = currentEventsMock;
   const pastEvents = pastEventsMock;
+  const approvedCount = currentEvents.filter((event) => event.status === "approved").length;
+  const pendingCount = currentEvents.filter((event) => event.status === "pending").length;
 
   return (
     <div className="bg-surface-base">
@@ -176,6 +178,21 @@ export default function DashboardOrganizer() {
               >
                 + Create event
               </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg bg-neutral-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Current events</p>
+                <p className="mt-2 text-2xl font-bold text-neutral-900">{currentEvents.length}</p>
+              </div>
+              <div className="rounded-lg bg-success-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-success-700">Approved</p>
+                <p className="mt-2 text-2xl font-bold text-success-900">{approvedCount}</p>
+              </div>
+              <div className="rounded-lg bg-warning-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-warning-700">Waiting for approval</p>
+                <p className="mt-2 text-2xl font-bold text-warning-900">{pendingCount}</p>
+              </div>
             </div>
           </header>
 
