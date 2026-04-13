@@ -8,6 +8,7 @@ const router = Router();
 router.get("/categories", eventController.getEventCategories);
 router.get("/", eventController.getEvents);
 router.get("/search", eventController.searchApprovedEvents);
+router.get("/:eventId/related", eventController.getRelatedEvents);
 router.get("/:eventId", eventController.getEventById);
 router.post("/", requireAuth, eventController.createEvent);
 
