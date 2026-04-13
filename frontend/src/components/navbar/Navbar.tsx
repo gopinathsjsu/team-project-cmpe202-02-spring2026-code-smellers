@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 import { Button } from "../ui/button";
 import type { NavbarProps } from "./Navbar.types";
 
@@ -77,6 +77,8 @@ export function Navbar({
 }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+  const location = useLocation();
 
   const initials = useMemo(() => getInitials(user?.name), [user?.name]);
 
@@ -181,7 +183,7 @@ export function Navbar({
                 <NavLink to="/login">
                   <Button variant="outline" size="sm" className="cursor-pointer">Create Event</Button>
                 </NavLink>
-                <NavLink to="/login">
+                <NavLink to="/login" state={{ from: location.pathname }}>
                   <Button variant="outline" size="sm" className="cursor-pointer">Log in</Button>
                 </NavLink>
                 <NavLink to="/register">
