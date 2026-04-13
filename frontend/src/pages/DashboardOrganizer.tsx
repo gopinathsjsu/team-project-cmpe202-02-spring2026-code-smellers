@@ -1,3 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
+import { apiUrl } from "../lib/api";
+
 type OrganizerEvent = {
   id: string;
   name: string;
@@ -6,6 +9,16 @@ type OrganizerEvent = {
   status: "approved" | "pending";
   ticketsSold: number;
 };
+
+type OrganizerDashboardResponse = {
+  currentEvents: OrganizerEvent[];
+  pastEvents: OrganizerEvent[];
+};
+
+const ORGANIZER_ID_PLACEHOLDER = "organizer-id-placeholder";
+
+/*
+Mock fallback dataset if you want local-only UI previews:
 
 const currentEventsMock: OrganizerEvent[] = [
   {
@@ -36,55 +49,24 @@ const pastEventsMock: OrganizerEvent[] = [
     ticketsSold: 311,
   },
 ];
-
-/*
-Backend API support placeholder (enable when organizer endpoint exists):
-
-import { useEffect, useState } from "react";
-
-type OrganizerDashboardResponse = {
-  currentEvents: OrganizerEvent[];
-  pastEvents: OrganizerEvent[];
-};
+*/
 
 async function fetchOrganizerDashboardData(
   organizerId: string,
+  signal?: AbortSignal,
 ): Promise<OrganizerDashboardResponse> {
-  const response = await fetch(`/api/organizers/${organizerId}/dashboard`);
+  const response = await fetch(
+    apiUrl(`/api/organizers/${organizerId}/dashboard`),
+    { signal },
+  );
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch organizer dashboard (${response.status})`);
+    const errorBody = await response.text();
+    throw new Error(errorBody || `Failed to fetch organizer dashboard (${response.status})`);
   }
+
   return response.json() as Promise<OrganizerDashboardResponse>;
 }
-
-const [currentEvents, setCurrentEvents] = useState<OrganizerEvent[]>([]);
-const [pastEvents, setPastEvents] = useState<OrganizerEvent[]>([]);
-const [isLoadingEvents, setIsLoadingEvents] = useState(true);
-const [eventsError, setEventsError] = useState<string | null>(null);
-
-useEffect(() => {
-  let isMounted = true;
-  setIsLoadingEvents(true);
-  fetchOrganizerDashboardData("organizer-id-placeholder")
-    .then((data) => {
-      if (!isMounted) return;
-      setCurrentEvents(data.currentEvents);
-      setPastEvents(data.pastEvents);
-      setEventsError(null);
-    })
-    .catch((error: unknown) => {
-      if (!isMounted) return;
-      setEventsError(error instanceof Error ? error.message : "Unknown error");
-    })
-    .finally(() => {
-      if (isMounted) setIsLoadingEvents(false);
-    });
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
-*/
 
 function StatusPill({ status }: { status: OrganizerEvent["status"] }) {
   if (status === "approved") {
@@ -135,11 +117,62 @@ function EventCard({ event }: { event: OrganizerEvent }) {
   );
 }
 
+function EmptyState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-6 text-sm text-neutral-600">
+      <p className="font-semibold text-neutral-800">{title}</p>
+      <p className="mt-1">{body}</p>
+    </div>
+  );
+}
+
 export default function DashboardOrganizer() {
-  const currentEvents = currentEventsMock;
-  const pastEvents = pastEventsMock;
-  const approvedCount = currentEvents.filter((event) => event.status === "approved").length;
-  const pendingCount = currentEvents.filter((event) => event.status === "pending").length;
+  const [currentEvents, setCurrentEvents] = useState<OrganizerEvent[]>([]);
+  const [pastEvents, setPastEvents] = useState<OrganizerEvent[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadDashboard() {
+      setIsLoadingEvents(true);
+      try {
+        const data = await fetchOrganizerDashboardData(
+          ORGANIZER_ID_PLACEHOLDER,
+          controller.signal,
+        );
+        setCurrentEvents(data.currentEvents ?? []);
+        setPastEvents(data.pastEvents ?? []);
+        setEventsError(null);
+        setLastSyncAt(new Date());
+      } catch (error: unknown) {
+        if (controller.signal.aborted) return;
+        setEventsError(error instanceof Error ? error.message : "Unknown error");
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingEvents(false);
+        }
+      }
+    }
+
+    loadDashboard();
+    return () => controller.abort();
+  }, []);
+
+  const approvedCount = useMemo(
+    () => currentEvents.filter((event) => event.status === "approved").length,
+    [currentEvents],
+  );
+  const pendingCount = useMemo(
+    () => currentEvents.filter((event) => event.status === "pending").length,
+    [currentEvents],
+  );
+  const totalSoldAcrossCurrent = useMemo(
+    () => currentEvents.reduce((sum, event) => sum + event.ticketsSold, 0),
+    [currentEvents],
+  );
 
   return (
     <div className="bg-surface-base">
@@ -170,6 +203,9 @@ export default function DashboardOrganizer() {
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Organizer Dashboard</p>
                 <h1 className="mt-1 font-display text-3xl font-bold text-neutral-900">Event performance at a glance</h1>
+                <p className="mt-1 text-sm text-neutral-500">
+                  {lastSyncAt ? `Last synced ${lastSyncAt.toLocaleTimeString()}` : "Not synced yet"}
+                </p>
               </div>
               <button
                 id="create-event"
@@ -196,27 +232,108 @@ export default function DashboardOrganizer() {
             </div>
           </header>
 
-          <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
-            <h2 className="font-display text-2xl font-semibold text-neutral-900">Current Events</h2>
-            <div className="mt-4 space-y-4">
-              {currentEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-          </section>
+          {eventsError ? (
+            <section className="rounded-xl border border-error-200 bg-error-50 p-4 text-sm text-error-700">
+              <p className="font-semibold">Dashboard data is unavailable</p>
+              <p className="mt-1">{eventsError}</p>
+              <p className="mt-2 text-xs text-error-800/80">
+                This is expected until the organizer dashboard endpoint is added.
+              </p>
+            </section>
+          ) : null}
 
-          <section id="orders" className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
-            <h2 className="font-display text-2xl font-semibold text-neutral-900">Past Events</h2>
-            <div className="mt-4 space-y-4">
-              {pastEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-          </section>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-6">
+              <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
+                <h2 className="font-display text-2xl font-semibold text-neutral-900">Current Events</h2>
+                {isLoadingEvents ? (
+                  <p className="mt-3 text-sm text-neutral-600">Loading current events...</p>
+                ) : currentEvents.length === 0 ? (
+                  <div className="mt-4">
+                    <EmptyState
+                      title="No current events"
+                      body="Create a new event or publish a draft to start seeing performance here."
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {currentEvents.map((event) => (
+                      <EventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+                )}
+              </section>
 
-          <section id="settings" className="rounded-xl border border-dashed border-neutral-300 bg-surface-subtle p-6 text-sm text-neutral-600">
-            Settings and organizer account preferences can go here.
-          </section>
+              <section id="orders" className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
+                <h2 className="font-display text-2xl font-semibold text-neutral-900">Past Events</h2>
+                {isLoadingEvents ? (
+                  <p className="mt-3 text-sm text-neutral-600">Loading past events...</p>
+                ) : pastEvents.length === 0 ? (
+                  <div className="mt-4">
+                    <EmptyState
+                      title="No past events"
+                      body="Completed events will appear here after their end date."
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {pastEvents.map((event) => (
+                      <EventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <aside className="space-y-6">
+              <section className="rounded-xl border border-neutral-200 bg-surface-raised p-5 shadow-soft">
+                <h3 className="font-display text-xl font-semibold text-neutral-900">Performance Snapshot</h3>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-600">Total tickets sold</span>
+                    <strong className="text-neutral-900">{totalSoldAcrossCurrent}</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-600">Pending approvals</span>
+                    <strong className="text-warning-800">{pendingCount}</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-600">Published events</span>
+                    <strong className="text-success-800">{approvedCount}</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-neutral-200 bg-surface-raised p-5 shadow-soft">
+                <h3 className="font-display text-xl font-semibold text-neutral-900">Quick Actions</h3>
+                <div className="mt-4 space-y-2">
+                  <button
+                    type="button"
+                    className="w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
+                  >
+                    Duplicate recent event
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
+                  >
+                    Download attendee CSV
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
+                  >
+                    Open event check-in
+                  </button>
+                </div>
+              </section>
+
+              <section id="settings" className="rounded-xl border border-dashed border-neutral-300 bg-surface-subtle p-5 text-sm text-neutral-600">
+                <p className="font-semibold text-neutral-800">Organizer Settings</p>
+                <p className="mt-1">Payout profile, team permissions, and notifications can be added here.</p>
+              </section>
+            </aside>
+          </div>
         </section>
       </div>
     </div>
