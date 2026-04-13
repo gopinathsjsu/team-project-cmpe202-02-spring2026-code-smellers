@@ -104,13 +104,15 @@ export default function Login() {
               <FormField
                 label="Email"
                 htmlFor="email-box"
-                required
                 hint="We'll never share your email."
+                required
                 error={emailError}
               >
                 <Input
                   id="email-box"
+                  name="email"
                   type="email"
+                  autocomplete="username"
                   placeholder="you@example.com"
                   value={email}
                   error={emailError}
@@ -133,7 +135,9 @@ export default function Login() {
               >
                 <Input
                   id="password-box"
+                  name="password"
                   type="password"
+                  autocomplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   error={passwordError}
