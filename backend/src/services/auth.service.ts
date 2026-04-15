@@ -111,3 +111,45 @@ export async function loginWithPassword(
     session: signInData.session,
   };
 }
+
+type MeSuccess = {
+  ok: true;
+  user: unknown;
+};
+
+type MeFail = {
+  ok: false;
+  error: string;
+  status: 401 | 500;
+};
+
+export async function getCurrentUser(
+  accessToken: string,
+): Promise<MeSuccess | MeFail> {
+  if (!accessToken) {
+    return { ok: false, error: "Missing access token", status: 401 };
+  }
+
+  const supabase = getSupabaseClient();
+
+  const {
+    data: { user: authUser },
+    error: authError,
+  } = await supabase.auth.getUser(accessToken);
+
+  if (authError || !authUser) {
+    return { ok: false, error: "Invalid or expired token", status: 401 };
+  }
+
+  const { data: appUser, error: userError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
+
+  if (userError) {
+    return { ok: false, error: userError.message, status: 500 };
+  }
+
+  return { ok: true, user: appUser };
+}
