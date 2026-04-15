@@ -3,41 +3,47 @@ import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
 import { Link, useNavigate, useLocation } from "react-router";
 
-import { apiUrl } from "../lib/api.ts"
+import { apiUrl } from "../lib/api.ts";
 
 // ideally should move this to a constants definition (used in protectedroute)
 const AUTH_TOKEN_KEY = "authToken";
 
-async function doLogin(email: string, password: string): Promise<[boolean, string]> {
+async function doLogin(
+  email: string,
+  password: string,
+): Promise<[boolean, string]> {
   let succ = true;
   let err = "";
 
   try {
     const response = await fetch(apiUrl("/api/auth/login"), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
 
-    if (!response.ok) { throw new Error(`${data.error} (${response.status})`) };
+    if (!response.ok) {
+      throw new Error(`${data.error} (${response.status})`);
+    }
 
-    // Store in localStorage atm, not ideal for XSS vulnerability
-    window.localStorage.setItem(AUTH_TOKEN_KEY, data.access_token); 
-    
-  } catch (error: unknown) {
+    const token = data.session?.access_token;
+    if (!token) {
+      throw new Error("Login succeeded but no access token was returned");
+    }
+    // Still stores the token in localStorage, not ideal but certified "Good Enough".
+    window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch (error) {
     succ = false;
-    
+
     if (error instanceof Error) {
       err = error.message;
     } else {
-      err = `Unexpected error: ${String(err)}`;
+      err = `Unexpected error: ${String(error)}`;
     }
-  
   } finally {
     return [succ, err];
   }
-  
 }
 
 export default function Login() {
@@ -47,15 +53,13 @@ export default function Login() {
   const [emailError, setEmailError] = useState<string | undefined>();
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-24">
-    
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-elevated">
-    
         <h1 className="font-display text-3xl font-bold text-brand-900">
           Welcome Back!
         </h1>
@@ -66,39 +70,43 @@ export default function Login() {
           onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault(); // Stops page reload
 
-            if(isSubmitting) { return; }
-                        
+            if (isSubmitting) {
+              return;
+            }
+
             setFormError(undefined);
             setEmailError(undefined);
             setPasswordError(undefined);
 
-            if (!email || !password) { 
-              if(!email) { setEmailError("Email is required."); }
-              if (!password) { setPasswordError("Password is required."); }
+            if (!email || !password) {
+              if (!email) {
+                setEmailError("Email is required.");
+              }
+              if (!password) {
+                setPasswordError("Password is required.");
+              }
               return;
             }
-            
+
             setIsSubmitting(true);
             const [succ, err] = await doLogin(email, password);
             setIsSubmitting(false);
 
             if (succ) {
-              navigate(location.state?.from || "/"); 
+              navigate(location.state?.from || "/");
             } else {
               setFormError(err);
             }
-            
           }}
         >
           <div className="mt-4 space-y-6">
-
             {/* Form Error Banner */}
             {formError && (
               <div className="rounded-md bg-error-50 p-3 text-sm text-error-600 border border-error-200">
                 {formError}
               </div>
             )}
-          
+
             {/* Email */}
             <div>
               <FormField
@@ -113,7 +121,6 @@ export default function Login() {
                   name="email"
                   type="email"
                   autoComplete="username"
-                  placeholder="you@example.com"
                   value={email}
                   error={emailError}
                   onChange={(e) => {
@@ -138,11 +145,10 @@ export default function Login() {
                   name="password"
                   type="password"
                   autoComplete="current-password"
-                  placeholder="••••••••"
                   value={password}
                   error={passwordError}
                   onChange={(e) => {
-                    setPassword(e.target.value)
+                    setPassword(e.target.value);
                     setFormError(undefined);
                     setPasswordError(undefined);
                   }}
@@ -154,7 +160,7 @@ export default function Login() {
               <Button
                 type="submit"
                 fullWidth
-                className="max-w-xs mt-4 mb-6 active:bg-brand-800"
+                className="max-w-xs mt-4 mb-6 active:bg-brand-800 cursor-pointer"
                 size="lg"
                 isLoading={isSubmitting}
               >
@@ -163,22 +169,28 @@ export default function Login() {
 
               <div>
                 <p>
-                <Link to="/forgot" className="text-brand-600 underline hover:text-brand-800">Forgot password?</Link>
+                  <Link
+                    to="/forgot"
+                    className="text-brand-600 underline hover:text-brand-800"
+                  >
+                    Forgot password?
+                  </Link>
                 </p>
-                
+
                 <p>
-                  New to &lt;appname&gt;?{" "}
-                  <Link to="/register" className="text-brand-600 underline hover:text-brand-800">Sign up!</Link>
+                  New to Eventdull?{" "}
+                  <Link
+                    to="/register"
+                    className="text-brand-600 underline hover:text-brand-800"
+                  >
+                    Sign up!
+                  </Link>
                 </p>
               </div>
-              
             </div>
           </div>
         </form>
-        
       </div>
-      
     </div>
   );
 }
-

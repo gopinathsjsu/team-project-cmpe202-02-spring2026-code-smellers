@@ -1,7 +1,48 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+
+const AUTH_TOKEN_KEY = "authToken";
+
+async function doRegister(
+  name: string,
+  email: string,
+  password: string,
+): Promise<[boolean, string]> {
+  let succ = true;
+  let err = "";
+
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const data = await response.json();
+
+    console.log("Register response data:", data);
+
+    if (!response.ok) {
+      throw new Error(`${data.error} (${response.status})`);
+    }
+
+    const token = data.session?.access_token;
+    if (!token) {
+      throw new Error("Registration succeeded but no access token was returned");
+    }
+    // Uses same pattern as login. Certified "Good Enough".
+    window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch (error: unknown) {
+    succ = false;
+    if (error instanceof Error) {
+      err = error.message;
+    } else {
+      err = String(error);
+    }
+  }
+  return [succ, err];
+}
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -15,35 +56,7 @@ export default function Register() {
   const [formError, setFormError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function doRegister(
-    name: string,
-    email: string,
-    password: string,
-  ): Promise<[boolean, string]> {
-    let succ = true;
-    let err = "";
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(`${data.error} (${response.status})`);
-      }
-    } catch (error: unknown) {
-      succ = false;
-      if (error instanceof Error) {
-        err = error.message;
-      } else {
-        err = String(error);
-      }
-    }
-    return [succ, err];
-  }
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-24">
@@ -68,7 +81,13 @@ export default function Register() {
             setPassword2Error(undefined);
             setFormError(undefined);
 
-            if (!name || !email || !password || !password2) {
+            if (
+              !name ||
+              !email ||
+              !password ||
+              password.length < 8 ||
+              !password2
+            ) {
               if (!name) {
                 setNameError("Name is required.");
               }
@@ -77,6 +96,9 @@ export default function Register() {
               }
               if (!password) {
                 setPasswordError("Password is required.");
+              }
+              if (password && password.length < 8) {
+                setPasswordError("Password must be at least 8 characters.");
               }
               if (!password2) {
                 setPassword2Error("Please confirm your password.");
@@ -97,7 +119,7 @@ export default function Register() {
             setIsSubmitting(false);
 
             if (succ) {
-              alert("Registration successful! Please log in.");
+              navigate("/");
             } else {
               setFormError("Registration failed: " + err);
             }
@@ -142,7 +164,7 @@ export default function Register() {
                   <Input
                     id="demo-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="you@email.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -159,13 +181,12 @@ export default function Register() {
                   label="Password"
                   htmlFor="password-box"
                   required
-                  hint="Password must be #-## characters long and contain blahblahblah."
+                  hint="Your password must be at least 8 characters."
                   error={passwordError}
                 >
                   <Input
                     id="demo-password"
                     type="password"
-                    placeholder="••••••••"
                     value={password}
                     error={passwordError}
                     onChange={(e) => {
@@ -184,7 +205,6 @@ export default function Register() {
                   <Input
                     id="demo-password"
                     type="password"
-                    placeholder="••••••••"
                     value={password2}
                     error={password2Error}
                     onChange={(e) => {
@@ -199,12 +219,24 @@ export default function Register() {
                 <Button
                   type="submit"
                   fullWidth
-                  className="max-w-xs mt-4 mb-6 active:bg-brand-800"
+                  className="max-w-xs mt-4 mb-6 active:bg-brand-800 cursor-pointer"
                   size="lg"
                   isLoading={isSubmitting}
                   onClick={() => {
+                    console.log(password.length);
                     setNameError(name ? undefined : "Name is required.");
                     setEmailError(email ? undefined : "Email is required.");
+                    setPasswordError(
+                      password ? undefined : "Password is required.",
+                    );
+                    setPasswordError(
+                      password.length >= 8
+                        ? undefined
+                        : "Password must be at least 8 characters.",
+                    );
+                    setPassword2Error(
+                      password2 ? undefined : "Please confirm your password.",
+                    );
                   }}
                 >
                   {isSubmitting ? "Signing Up..." : "Sign Up"}
@@ -227,4 +259,3 @@ export default function Register() {
     </div>
   );
 }
-

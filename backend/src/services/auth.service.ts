@@ -32,7 +32,7 @@ type Fail = { ok: false; error: string; status: 400 | 500 };
 
 export async function registerUser(
   body: RegisterRequestBody,
-): Promise<{ ok: true; user: unknown } | Fail> {
+): Promise<{ ok: true; user: unknown; session: unknown } | Fail> {
   const invalidRequest = validateRegisterBody(body);
   if (invalidRequest) {
     return { ok: false, error: invalidRequest, status: 400 };
@@ -80,7 +80,7 @@ export async function registerUser(
     return { ok: false, error: createUserError.message, status: 400 };
   }
 
-  return { ok: true, user: createdUser };
+  return { ok: true, user: createdUser, session: signUpData.session };
 }
 
 export async function loginWithPassword(

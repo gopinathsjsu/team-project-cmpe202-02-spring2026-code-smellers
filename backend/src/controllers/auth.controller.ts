@@ -11,7 +11,10 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(result.status).json({ error: result.error });
     }
 
-    return res.status(201).json(result.user);
+    return res.status(201).json({
+      user: result.user,
+      session: result.session,
+    });
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Unexpected error",
