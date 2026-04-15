@@ -8,7 +8,7 @@ function validateRegisterBody(body: RegisterRequestBody): string | null {
   if (!body.password) {
     return "Missing required field: password";
   }
-  if (!body.displayName) {
+  if (!body.name) {
     return "Missing required field: displayName";
   }
   const passwordLengthMin = 8;
@@ -44,7 +44,7 @@ export async function registerUser(
     password: body.password as string,
     options: {
       data: {
-        displayName: body.displayName,
+        display_name: body.name, // using "display_name" to be consistent with the "users" table schema
         is_admin: body.is_admin,
       },
     },
@@ -66,7 +66,7 @@ export async function registerUser(
   const userRecord = {
     id: authUserId,
     email: body.email as string,
-    display_name: body.displayName as string,
+    display_name: body.name as string,
     is_admin: body.is_admin,
   } as any;
 
