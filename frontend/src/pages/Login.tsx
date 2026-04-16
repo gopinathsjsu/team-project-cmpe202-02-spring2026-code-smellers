@@ -22,8 +22,13 @@ async function doLogin(email: string, password: string): Promise<[boolean, strin
 
     if (!response.ok) { throw new Error(`${data.error} (${response.status})`) };
 
+    const accessToken = data?.session?.access_token;
+    if (!accessToken) {
+      throw new Error("Login response missing session access token");
+    }
+
     // Store in localStorage atm, not ideal for XSS vulnerability
-    window.localStorage.setItem(AUTH_TOKEN_KEY, data.access_token); 
+    window.localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
     
   } catch (error: unknown) {
     succ = false;
@@ -112,7 +117,7 @@ export default function Login() {
                   id="email-box"
                   name="email"
                   type="email"
-                  autocomplete="username"
+                  autoComplete="username"
                   placeholder="you@example.com"
                   value={email}
                   error={emailError}
@@ -137,7 +142,7 @@ export default function Login() {
                   id="password-box"
                   name="password"
                   type="password"
-                  autocomplete="current-password"
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   error={passwordError}
