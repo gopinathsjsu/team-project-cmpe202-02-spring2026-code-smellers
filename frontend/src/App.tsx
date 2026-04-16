@@ -13,12 +13,16 @@ import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Forgot from "./pages/Forgot.tsx";
 import SearchEvents from "./pages/SearchEvents.tsx";
+import { GuestOnlyRoute } from "./routes/GuestOnlyRoute.tsx";
+import { ProtectedRoute } from "./routes/ProtectedRoute.tsx";
 
 export default function App() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [browseLocation, setBrowseLocation] = useState("San Jose");
-  const hideHeaderFooter = ["/register", "/login", "/forgot"].includes(pathname);
+  const hideHeaderFooter = ["/register", "/login", "/forgot"].includes(
+    pathname,
+  );
 
   function handleNavbarSearch(params: { query: string; location: string }) {
     const searchParams = new URLSearchParams();
@@ -43,13 +47,18 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route index element={<Home browseLocation={browseLocation} />} />
-          <Route path="register" element={<Register />} />
-          <Route path="login" element={<Login />} />
+          <Route element={<GuestOnlyRoute />}>
+            <Route path="register" element={<Register />} />
+            <Route path="login" element={<Login />} />
+          </Route>
           <Route path="forgot" element={<Forgot />} />
+          {/* Protected route is incomplete: needs to discern user roles. Currently only checks if logged in */}
+          {/* <Route element={<ProtectedRoute />}> */}
           <Route path="dashboard-user" element={<DashboardUser />} />
           <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
           <Route path="dashboard-admin" element={<DashboardAdmin />} />
           <Route path="CreateEvent" element={<CreateEvent />} />
+          {/* </Route> */}
           <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
           <Route path="search" element={<SearchEvents />} />
