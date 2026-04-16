@@ -10,5 +10,6 @@ export type NavbarProps = {
   onBrowseLocationChange: (value: string) => void;
   /** Parent decides navigation / side effects; Navbar only collects query + location. */
   onSearch?: (params: { query: string; location: string }) => void;
-  user?: User;
+  // user is now sourced from AuthProvider, so we can remove it from props. Kept here for reference in case we want to revert this change.
+  // user?: User;
 };
