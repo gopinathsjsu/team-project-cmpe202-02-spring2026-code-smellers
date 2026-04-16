@@ -198,7 +198,7 @@ export default function CreateEvent() {
           <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Organizer Workspace</p>
           <h1 className="mt-1 font-display text-4xl font-bold text-neutral-900">Create an event</h1>
           <p className="mt-2 max-w-3xl text-sm text-neutral-600">
-            This first chunk sets up all fields required by the backend create event payload.
+            Complete event details below to publish your draft. For in-person events, the location query text is used by backend Google Places lookup before saving.
           </p>
         </header>
 
@@ -313,6 +313,9 @@ export default function CreateEvent() {
 
             <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
               <h2 className="font-display text-2xl font-semibold text-neutral-900">Location</h2>
+              <p className="mt-2 text-sm text-neutral-600">
+                The <strong>Google Places Query Text</strong> is sent as <strong>location.queryText</strong>. Backend resolves the place and stores the successful location details.
+              </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <FormField label="Location Type" htmlFor="event-location-type" required>
                   <select
@@ -377,10 +380,26 @@ export default function CreateEvent() {
               </div>
             </section>
 
-            <section className="flex justify-end rounded-xl border border-neutral-200 bg-surface-raised p-4 shadow-soft">
-              <Button type="submit" isLoading={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Event"}
-              </Button>
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-surface-raised p-4 shadow-soft">
+              <p className="text-sm text-neutral-600">
+                Submission creates an organizer event record and may require approval before it appears publicly.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setForm(INITIAL_FORM);
+                    setSubmitError(null);
+                    setSubmitSuccess(null);
+                  }}
+                >
+                  Reset
+                </Button>
+                <Button type="submit" isLoading={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create Event"}
+                </Button>
+              </div>
             </section>
 
             {submitError ? (
