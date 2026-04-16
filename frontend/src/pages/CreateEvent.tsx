@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { FormField, Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import { apiUrl } from "../lib/api";
 
 type EventCategory =
   | "music"
@@ -67,7 +68,7 @@ const INITIAL_FORM: CreateEventFormState = {
 
 export default function CreateEvent() {
   const [form, setForm] = useState<CreateEventFormState>(INITIAL_FORM);
-  const isSubmitting = false;
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
@@ -118,7 +119,14 @@ export default function CreateEvent() {
     };
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function getAuthToken(): string | null {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return window.localStorage.getItem("authToken");
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
 
@@ -126,12 +134,61 @@ export default function CreateEvent() {
     setSubmitSuccess(null);
 
     const payload = buildPayload();
+    const token = getAuthToken();
+
     if (!payload.title) {
       setSubmitError("Event title is required.");
       return;
     }
+    if (!payload.startDateTime || !payload.endDateTime) {
+      setSubmitError("Valid start and end date/time are required.");
+      return;
+    }
+    if (new Date(payload.endDateTime) <= new Date(payload.startDateTime)) {
+      setSubmitError("End date/time must be later than start date/time.");
+      return;
+    }
+    if (!payload.capacity || payload.capacity <= 0) {
+      setSubmitError("Capacity must be a positive number.");
+      return;
+    }
+    if (form.locationType === "in-person" && !payload.location?.queryText) {
+      setSubmitError("Google Places query text is required for in-person events.");
+      return;
+    }
+    if (!token) {
+      setSubmitError("You must be logged in to create an event.");
+      return;
+    }
 
-    setSubmitSuccess("Form validation passed. API submit will be added in the next chunk.");
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(apiUrl("/api/events"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as { error?: string; id?: number };
+      if (!response.ok) {
+        setSubmitError(data.error || `Create event failed (${response.status})`);
+        return;
+      }
+
+      setSubmitSuccess(
+        data.id
+          ? `Event created successfully (ID: ${data.id}). It may be pending approval.`
+          : "Event created successfully. It may be pending approval.",
+      );
+      setForm(INITIAL_FORM);
+    } catch (error: unknown) {
+      setSubmitError(error instanceof Error ? error.message : "Unexpected error while creating event.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -321,7 +378,9 @@ export default function CreateEvent() {
             </section>
 
             <section className="flex justify-end rounded-xl border border-neutral-200 bg-surface-raised p-4 shadow-soft">
-              <Button type="submit">Continue (Next Chunk)</Button>
+              <Button type="submit" isLoading={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Event"}
+              </Button>
             </section>
 
             {submitError ? (
