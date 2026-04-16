@@ -4,46 +4,27 @@ import { FormField, Input } from "../components/ui/input";
 import { Link, useNavigate, useLocation } from "react-router";
 
 import { apiUrl } from "../lib/api.ts";
+import { useAuth } from "../auth/AuthProvider.tsx";
 
-// ideally should move this to a constants definition (used in protectedroute)
-const AUTH_TOKEN_KEY = "authToken";
+async function doLogin(email: string, password: string): Promise<string> {
+  const response = await fetch(apiUrl("/api/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
 
-async function doLogin(
-  email: string,
-  password: string,
-): Promise<[boolean, string]> {
-  let succ = true;
-  let err = "";
+  const data = await response.json();
 
-  try {
-    const response = await fetch(apiUrl("/api/auth/login"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(`${data.error} (${response.status})`);
-    }
-
-    const token = data.session?.access_token;
-    if (!token) {
-      throw new Error("Login succeeded but no access token was returned");
-    }
-    // Still stores the token in localStorage, not ideal but certified "Good Enough".
-    window.localStorage.setItem(AUTH_TOKEN_KEY, token);
-  } catch (error) {
-    succ = false;
-
-    if (error instanceof Error) {
-      err = error.message;
-    } else {
-      err = `Unexpected error: ${String(error)}`;
-    }
-  } finally {
-    return [succ, err];
+  if (!response.ok) {
+    throw new Error(`${data.error} (${response.status})`);
   }
+
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new Error("Login succeeded but no access token was returned");
+  }
+
+  return token;
 }
 
 export default function Login() {
@@ -56,6 +37,7 @@ export default function Login() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-24">
@@ -68,7 +50,7 @@ export default function Login() {
         <form
           className="mt-8"
           onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault(); // Stops page reload
+            e.preventDefault();
 
             if (isSubmitting) {
               return;
@@ -89,13 +71,17 @@ export default function Login() {
             }
 
             setIsSubmitting(true);
-            const [succ, err] = await doLogin(email, password);
-            setIsSubmitting(false);
 
-            if (succ) {
+            try {
+              const token = await doLogin(email, password);
+              await login(token);
               navigate(location.state?.from || "/");
-            } else {
-              setFormError(err);
+            } catch (error) {
+              setFormError(
+                error instanceof Error ? error.message : "Unexpected error",
+              );
+            } finally {
+              setIsSubmitting(false);
             }
           }}
         >

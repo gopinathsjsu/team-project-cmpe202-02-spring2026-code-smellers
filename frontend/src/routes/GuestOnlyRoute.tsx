@@ -9,7 +9,7 @@ export function GuestOnlyRoute() {
   }
 
   if (status === "authenticated") {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

@@ -1,47 +1,33 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
-import { Link, useNavigate } from "react-router";
-
-const AUTH_TOKEN_KEY = "authToken";
+import { Link, useLocation, useNavigate } from "react-router";
+import { apiUrl } from "../lib/api";
+import { useAuth } from "../auth/AuthProvider";
 
 async function doRegister(
   name: string,
   email: string,
   password: string,
-): Promise<[boolean, string]> {
-  let succ = true;
-  let err = "";
+): Promise<string> {
+  const response = await fetch(apiUrl("/api/auth/register"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password }),
+  });
 
-  try {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await response.json();
+  const data = await response.json();
 
-    console.log("Register response data:", data);
-
-    if (!response.ok) {
-      throw new Error(`${data.error} (${response.status})`);
-    }
-
-    const token = data.session?.access_token;
-    if (!token) {
-      throw new Error("Registration succeeded but no access token was returned");
-    }
-    // Uses same pattern as login. Certified "Good Enough".
-    window.localStorage.setItem(AUTH_TOKEN_KEY, token);
-  } catch (error: unknown) {
-    succ = false;
-    if (error instanceof Error) {
-      err = error.message;
-    } else {
-      err = String(error);
-    }
+  if (!response.ok) {
+    throw new Error(`${data.error} (${response.status})`);
   }
-  return [succ, err];
+
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new Error("Registration succeeded but no access token was returned");
+  }
+
+  return token;
 }
 
 export default function Register() {
@@ -57,6 +43,8 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-24">
@@ -114,14 +102,16 @@ export default function Register() {
 
             setIsSubmitting(true);
 
-            const [succ, err] = await doRegister(name, email, password);
-
-            setIsSubmitting(false);
-
-            if (succ) {
-              navigate("/");
-            } else {
-              setFormError("Registration failed: " + err);
+            try {
+              const token = await doRegister(name, email, password);
+              await login(token);
+              navigate(location.state?.from || "/");
+            } catch (error) {
+              setFormError(
+                error instanceof Error ? error.message : "Unexpected error",
+              );
+            } finally {
+              setIsSubmitting(false);
             }
           }}
         >
