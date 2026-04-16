@@ -42,18 +42,16 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-type AuthenticatedRequest = Request & {
-  user?: unknown;
-};
-
-export const getMe = async (req: AuthenticatedRequest, res: Response) => {
+export const getMe = async (req: Request, res: Response) => {
   try {
-    const user = req.user;
-    if (!user) {
-      return res.status(401).json({ error: "Unauthorized" });
+    const token = (req.headers.authorization || "").replace("Bearer ", "");
+    const data = await authService.getCurrentUser(token);
+    if (!data.ok) {
+      return res
+    .status(401).json({ error: "Unauthorized" });
     }
     
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: data.user });
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Unexpected error",
