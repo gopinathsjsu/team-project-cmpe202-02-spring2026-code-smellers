@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { Button } from "../ui/button";
 import type { NavbarProps } from "./Navbar.types";
+import { useAuth } from "../../auth/AuthProvider";
 
 function SearchIcon() {
   return (
@@ -73,14 +74,17 @@ export function Navbar({
   browseLocation,
   onBrowseLocationChange,
   onSearch,
-  user,
+  // user,
 }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const location = useLocation();
 
-  const initials = useMemo(() => getInitials(user?.name), [user?.name]);
+  const { status, user, logout } = useAuth();
+  
+  // const initials = useMemo(() => getInitials(user?.name), [user?.name]);
+  const initials = useMemo(() => getInitials(user?.display_name), [user?.display_name]);  
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -158,7 +162,7 @@ export function Navbar({
               <SearchIcon />
             </button>
 
-            {isLoggedIn ? (
+            {status === "authenticated" ? (
               <>
                 <NavLink to="/CreateEvent">
                   <Button variant="outline" size="sm">Create Event</Button>
@@ -172,13 +176,13 @@ export function Navbar({
                 </button>
                 <div
                   className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white cursor-pointer"
-                  aria-label={`Signed in as ${user?.name ?? "Eventdull user"}`}
-                  title={user?.name ?? "Eventdull user"}
+                  aria-label={`Signed in as ${user?.display_name ?? "Eventdull user"}`}
+                  title={user?.display_name ?? "Eventdull user"}
                 >
                   {initials}
                 </div>
               </>
-            ) : (
+            ) : status === "unauthenticated" ? (
               <>
                 <NavLink to="/login">
                   <Button variant="outline" size="sm" className="cursor-pointer">Create Event</Button>
@@ -190,7 +194,7 @@ export function Navbar({
                   <Button variant="outline" size="sm" className="cursor-pointer">Sign up</Button>
                 </NavLink>
               </>
-            )}
+            ) : null}
           </div>
         </div>
 

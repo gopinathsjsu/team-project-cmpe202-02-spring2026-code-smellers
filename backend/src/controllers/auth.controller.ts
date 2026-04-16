@@ -42,7 +42,11 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-export const getMe = async (req: Request, res: Response) => {
+type AuthenticatedRequest = Request & {
+  user?: unknown;
+};
+
+export const getMe = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user) {
