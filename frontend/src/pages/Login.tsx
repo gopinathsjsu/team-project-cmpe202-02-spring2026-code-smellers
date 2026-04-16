@@ -41,10 +41,6 @@ async function doLogin(email: string, password: string): Promise<[boolean, strin
 }
 
 export default function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const routeState = location.state as RouteState | null;
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
