@@ -15,8 +15,9 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 type AuthUser = {
   id: string;
   email: string;
-  display_name?: string;
-  is_admin?: boolean;
+  display_name: string;
+  is_admin: boolean;
+  created_at: string;
 };
 
 type AuthContextType = {
@@ -39,7 +40,7 @@ async function fetchMe(token: string): Promise<{ user: AuthUser }> {
 
   const data = await response.json();
 
-  if (!response.ok) {
+  if (!response.ok || !data.user) {
     throw new Error(data.error || "Failed to fetch current user");
   }
 
@@ -60,8 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const data = await fetchMe(token);
-      setUser(data.user);
+      const { user } = await fetchMe(token);
+      setUser(user);
       setStatus("authenticated");
     } catch {
       clearAuthToken();

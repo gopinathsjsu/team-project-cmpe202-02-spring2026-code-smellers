@@ -38,7 +38,6 @@ export default function App() {
     <div className="flex min-h-screen flex-col bg-surface-base text-neutral-900">
       {!hideHeaderFooter && (
         <Navbar
-          isLoggedIn={false}
           browseLocation={browseLocation}
           onBrowseLocationChange={setBrowseLocation}
           onSearch={handleNavbarSearch}

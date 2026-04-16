@@ -70,11 +70,11 @@ function getInitials(name?: string) {
 }
 
 export function Navbar({
-  isLoggedIn,
+  // isLoggedIn, // now uses AuthContext to determine auth status
+  // user, // also uses AuthContext for user info
   browseLocation,
   onBrowseLocationChange,
   onSearch,
-  // user,
 }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
