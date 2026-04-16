@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { FormField, Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 
@@ -31,6 +31,24 @@ type CreateEventFormState = {
   locationLongitude: string;
 };
 
+type CreateEventPayload = {
+  title?: string;
+  description?: string;
+  category?: EventCategory;
+  startDateTime?: string;
+  endDateTime?: string;
+  capacity?: number;
+  imageUrl?: string;
+  location?: {
+    type?: LocationType;
+    queryText?: string;
+    venueName?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+};
+
 const INITIAL_FORM: CreateEventFormState = {
   title: "",
   description: "",
@@ -49,12 +67,71 @@ const INITIAL_FORM: CreateEventFormState = {
 
 export default function CreateEvent() {
   const [form, setForm] = useState<CreateEventFormState>(INITIAL_FORM);
+  const isSubmitting = false;
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   function updateForm<K extends keyof CreateEventFormState>(
     key: K,
     value: CreateEventFormState[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function parseOptionalNumber(value: string): number | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
+  function toIso(value: string): string | undefined {
+    if (!value.trim()) {
+      return undefined;
+    }
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) {
+      return undefined;
+    }
+    return d.toISOString();
+  }
+
+  function buildPayload(): CreateEventPayload {
+    return {
+      title: form.title.trim() || undefined,
+      description: form.description.trim() || undefined,
+      category: form.category,
+      startDateTime: toIso(form.startDateTime),
+      endDateTime: toIso(form.endDateTime),
+      capacity: parseOptionalNumber(form.capacity),
+      imageUrl: form.imageUrl.trim() || undefined,
+      location: {
+        type: form.locationType,
+        queryText: form.locationQueryText.trim() || undefined,
+        venueName: form.locationVenueName.trim() || undefined,
+        address: form.locationAddress.trim() || undefined,
+        latitude: parseOptionalNumber(form.locationLatitude),
+        longitude: parseOptionalNumber(form.locationLongitude),
+      },
+    };
+  }
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    const payload = buildPayload();
+    if (!payload.title) {
+      setSubmitError("Event title is required.");
+      return;
+    }
+
+    setSubmitSuccess("Form validation passed. API submit will be added in the next chunk.");
   }
 
   return (
@@ -81,9 +158,7 @@ export default function CreateEvent() {
 
           <form
             className="space-y-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
+            onSubmit={handleSubmit}
           >
             <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
               <h2 className="font-display text-2xl font-semibold text-neutral-900">Basic Information</h2>
@@ -248,6 +323,18 @@ export default function CreateEvent() {
             <section className="flex justify-end rounded-xl border border-neutral-200 bg-surface-raised p-4 shadow-soft">
               <Button type="submit">Continue (Next Chunk)</Button>
             </section>
+
+            {submitError ? (
+              <section className="rounded-xl border border-error-200 bg-error-50 p-4 text-sm text-error-700">
+                {submitError}
+              </section>
+            ) : null}
+
+            {submitSuccess ? (
+              <section className="rounded-xl border border-success-200 bg-success-50 p-4 text-sm text-success-800">
+                {submitSuccess}
+              </section>
+            ) : null}
           </form>
         </div>
       </div>
