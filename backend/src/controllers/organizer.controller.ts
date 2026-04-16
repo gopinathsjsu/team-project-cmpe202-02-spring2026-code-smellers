@@ -6,22 +6,13 @@ type RequestWithUser = Request & { user?: User };
 
 export const getOrganizerDashboard = async (req: Request, res: Response) => {
   try {
-    const { organizerId } = req.params;
     const authUserId = (req as RequestWithUser).user?.id;
-
-    if (!organizerId) {
-      return res.status(400).json({ error: "Missing organizerId path param" });
-    }
 
     if (!authUserId) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    if (authUserId !== organizerId) {
-      return res.status(403).json({ error: "Forbidden: organizer mismatch" });
-    }
-
-    const result = await organizerService.getOrganizerDashboard(organizerId);
+    const result = await organizerService.getOrganizerDashboard(authUserId);
     if (!result.ok) {
       return res.status(result.status).json({ error: result.error });
     }

@@ -15,93 +15,13 @@ type OrganizerDashboardResponse = {
   pastEvents: OrganizerEvent[];
 };
 
-function parseJsonObject(raw: string | null): Record<string, unknown> | null {
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") {
-      return parsed as Record<string, unknown>;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function getNestedString(
-  obj: Record<string, unknown> | null,
-  path: string[],
-): string | null {
-  if (!obj) {
-    return null;
-  }
-
-  let current: unknown = obj;
-  for (const part of path) {
-    if (!current || typeof current !== "object" || !(part in current)) {
-      return null;
-    }
-    current = (current as Record<string, unknown>)[part];
-  }
-
-  return typeof current === "string" && current.trim() ? current.trim() : null;
-}
-
-function getOrganizerIdFromStorage(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const directId =
-    window.localStorage.getItem("organizerId") ||
-    window.localStorage.getItem("authUserId") ||
-    window.localStorage.getItem("userId");
-
-  if (directId?.trim()) {
-    return directId.trim();
-  }
-
-  const userObj =
-    parseJsonObject(window.localStorage.getItem("authUser")) ||
-    parseJsonObject(window.localStorage.getItem("user")) ||
-    parseJsonObject(window.localStorage.getItem("currentUser"));
-
-  const userId = getNestedString(userObj, ["id"]);
-  if (userId) {
-    return userId;
-  }
-
-  const sessionObj =
-    parseJsonObject(window.localStorage.getItem("authSession")) ||
-    parseJsonObject(window.localStorage.getItem("session"));
-
-  return getNestedString(sessionObj, ["user", "id"]);
-}
-
 function getAccessTokenFromStorage(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const directToken =
-    window.localStorage.getItem("authToken") ||
-    window.localStorage.getItem("accessToken");
-
-  if (directToken?.trim()) {
-    return directToken.trim();
-  }
-
-  const sessionObj =
-    parseJsonObject(window.localStorage.getItem("authSession")) ||
-    parseJsonObject(window.localStorage.getItem("session"));
-
-  return (
-    getNestedString(sessionObj, ["access_token"]) ||
-    getNestedString(sessionObj, ["session", "access_token"])
-  );
+  const directToken = window.localStorage.getItem("authToken");
+  return directToken?.trim() ? directToken.trim() : null;
 }
 
 /*
@@ -139,12 +59,11 @@ const pastEventsMock: OrganizerEvent[] = [
 */
 
 async function fetchOrganizerDashboardData(
-  organizerId: string,
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<OrganizerDashboardResponse> {
   const response = await fetch(
-    apiUrl(`/api/organizers/${organizerId}/dashboard`),
+    apiUrl("/api/organizers/dashboard"),
     {
       signal,
       headers: {
@@ -232,19 +151,13 @@ export default function DashboardOrganizer() {
     async function loadDashboard() {
       setIsLoadingEvents(true);
       try {
-        const organizerId = getOrganizerIdFromStorage();
         const accessToken = getAccessTokenFromStorage();
-
-        if (!organizerId) {
-          throw new Error("Missing organizer id in localStorage. Save one of: organizerId, authUserId, userId, or authSession.user.id.");
-        }
 
         if (!accessToken) {
           throw new Error("Missing auth token in localStorage. Save one of: authToken, accessToken, or authSession.access_token.");
         }
 
         const data = await fetchOrganizerDashboardData(
-          organizerId,
           accessToken,
           controller.signal,
         );
