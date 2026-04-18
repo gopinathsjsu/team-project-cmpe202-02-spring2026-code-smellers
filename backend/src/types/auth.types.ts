@@ -1,7 +1,7 @@
 export interface RegisterRequestBody {
   email: string;
   password: string;
-  displayName: string;
+  name: string;
   is_admin: boolean;
 }
 
