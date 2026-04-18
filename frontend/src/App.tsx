@@ -54,10 +54,10 @@ export default function App() {
           {/* Role-based checks (attendee vs organizer vs admin) can be added later; this only requires login */}
           <Route element={<ProtectedRoute />}>
             <Route path="dashboard-user" element={<DashboardUser />} />
+            <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
+            <Route path="dashboard-admin" element={<DashboardAdmin />} />
+            <Route path="CreateEvent" element={<CreateEvent />} />
           </Route>
-          <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
-          <Route path="dashboard-admin" element={<DashboardAdmin />} />
-          <Route path="CreateEvent" element={<CreateEvent />} />
           <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
           <Route path="search" element={<SearchEvents />} />
