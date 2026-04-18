@@ -51,13 +51,13 @@ export default function App() {
             <Route path="login" element={<Login />} />
           </Route>
           <Route path="forgot" element={<Forgot />} />
-          {/* Protected route is incomplete: needs to discern user roles. Currently only checks if logged in */}
-          {/* <Route element={<ProtectedRoute />}> */}
-          <Route path="dashboard-user" element={<DashboardUser />} />
+          {/* Role-based checks (attendee vs organizer vs admin) can be added later; this only requires login */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="dashboard-user" element={<DashboardUser />} />
+          </Route>
           <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
           <Route path="dashboard-admin" element={<DashboardAdmin />} />
           <Route path="CreateEvent" element={<CreateEvent />} />
-          {/* </Route> */}
           <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
           <Route path="search" element={<SearchEvents />} />
