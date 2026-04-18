@@ -3,41 +3,28 @@ import { Button } from "../components/ui/button";
 import { FormField, Input } from "../components/ui/input";
 import { Link, useNavigate, useLocation } from "react-router";
 
-import { apiUrl } from "../lib/api.ts"
+import { apiUrl } from "../lib/api.ts";
+import { useAuth } from "../auth/AuthProvider.tsx";
 
-// ideally should move this to a constants definition (used in protectedroute)
-const AUTH_TOKEN_KEY = "authToken";
+async function doLogin(email: string, password: string): Promise<string> {
+  const response = await fetch(apiUrl("/api/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
 
-async function doLogin(email: string, password: string): Promise<[boolean, string]> {
-  let succ = true;
-  let err = "";
+  const data = await response.json();
 
-  try {
-    const response = await fetch(apiUrl("/api/auth/login"), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await response.json();
-
-    if (!response.ok) { throw new Error(`${data.error} (${response.status})`) };
-
-    // Store in localStorage atm, not ideal for XSS vulnerability
-    window.localStorage.setItem(AUTH_TOKEN_KEY, data.access_token); 
-    
-  } catch (error: unknown) {
-    succ = false;
-    
-    if (error instanceof Error) {
-      err = error.message;
-    } else {
-      err = `Unexpected error: ${String(err)}`;
-    }
-  
-  } finally {
-    return [succ, err];
+  if (!response.ok) {
+    throw new Error(`${data.error} (${response.status})`);
   }
-  
+
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new Error("Login succeeded but no access token was returned");
+  }
+
+  return token;
 }
 
 export default function Login() {
@@ -47,15 +34,14 @@ export default function Login() {
   const [emailError, setEmailError] = useState<string | undefined>();
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-24">
-    
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-elevated">
-    
         <h1 className="font-display text-3xl font-bold text-brand-900">
           Welcome Back!
         </h1>
@@ -64,41 +50,49 @@ export default function Login() {
         <form
           className="mt-8"
           onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault(); // Stops page reload
+            e.preventDefault();
 
-            if(isSubmitting) { return; }
-                        
+            if (isSubmitting) {
+              return;
+            }
+
             setFormError(undefined);
             setEmailError(undefined);
             setPasswordError(undefined);
 
-            if (!email || !password) { 
-              if(!email) { setEmailError("Email is required."); }
-              if (!password) { setPasswordError("Password is required."); }
+            if (!email || !password) {
+              if (!email) {
+                setEmailError("Email is required.");
+              }
+              if (!password) {
+                setPasswordError("Password is required.");
+              }
               return;
             }
-            
-            setIsSubmitting(true);
-            const [succ, err] = await doLogin(email, password);
-            setIsSubmitting(false);
 
-            if (succ) {
-              navigate(location.state?.from || "/"); 
-            } else {
-              setFormError(err);
+            setIsSubmitting(true);
+
+            try {
+              const token = await doLogin(email, password);
+              await login(token);
+              navigate(location.state?.from || "/");
+            } catch (error) {
+              setFormError(
+                error instanceof Error ? error.message : "Unexpected error",
+              );
+            } finally {
+              setIsSubmitting(false);
             }
-            
           }}
         >
           <div className="mt-4 space-y-6">
-
             {/* Form Error Banner */}
             {formError && (
               <div className="rounded-md bg-error-50 p-3 text-sm text-error-600 border border-error-200">
                 {formError}
               </div>
             )}
-          
+
             {/* Email */}
             <div>
               <FormField
@@ -112,8 +106,7 @@ export default function Login() {
                   id="email-box"
                   name="email"
                   type="email"
-                  autocomplete="username"
-                  placeholder="you@example.com"
+                  autoComplete="username"
                   value={email}
                   error={emailError}
                   onChange={(e) => {
@@ -137,12 +130,11 @@ export default function Login() {
                   id="password-box"
                   name="password"
                   type="password"
-                  autocomplete="current-password"
-                  placeholder="••••••••"
+                  autoComplete="current-password"
                   value={password}
                   error={passwordError}
                   onChange={(e) => {
-                    setPassword(e.target.value)
+                    setPassword(e.target.value);
                     setFormError(undefined);
                     setPasswordError(undefined);
                   }}
@@ -154,7 +146,7 @@ export default function Login() {
               <Button
                 type="submit"
                 fullWidth
-                className="max-w-xs mt-4 mb-6 active:bg-brand-800"
+                className="max-w-xs mt-4 mb-6 active:bg-brand-800 cursor-pointer"
                 size="lg"
                 isLoading={isSubmitting}
               >
@@ -163,21 +155,28 @@ export default function Login() {
 
               <div>
                 <p>
-                <Link to="/forgot" className="text-brand-600 underline hover:text-brand-800">Forgot password?</Link>
+                  <Link
+                    to="/forgot"
+                    className="text-brand-600 underline hover:text-brand-800"
+                  >
+                    Forgot password?
+                  </Link>
                 </p>
-                
+
                 <p>
-                  New to &lt;appname&gt;?{" "}
-                  <Link to="/register" className="text-brand-600 underline hover:text-brand-800">Sign up!</Link>
+                  New to Eventdull?{" "}
+                  <Link
+                    to="/register"
+                    className="text-brand-600 underline hover:text-brand-800"
+                  >
+                    Sign up!
+                  </Link>
                 </p>
               </div>
-              
             </div>
           </div>
         </form>
-        
       </div>
-      
     </div>
   );
 }
