@@ -5,6 +5,18 @@ import type { CreateEventRequestBody } from "../types/event.types";
 import { addressUpToCity } from "../utils/addressDisplay";
 import { searchLocationsByText } from "../utils/googlePlaces";
 
+const EVENT_CATEGORY_SET = new Set<string>([
+  "music",
+  "nightlife",
+  "art",
+  "holidays",
+  "sports",
+  "hobbies",
+  "business",
+  "food",
+  "charity",
+]);
+
 export type EventSearchListItem = {
   id: string;
   title: string;
@@ -143,23 +155,51 @@ async function getOrCreateLocation(
 export function validateCreateEventBody(
   body: CreateEventRequestBody,
 ): string | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return "Request body must be a JSON object";
+  }
+
   if (!body.title) {
     return "Missing required field: title";
   }
+  if (typeof body.title !== "string" || !body.title.trim()) {
+    return "Field title must be a non-empty string";
+  }
+
   if (!body.category) {
     return "Missing required field: category";
   }
+  if (typeof body.category !== "string" || !EVENT_CATEGORY_SET.has(body.category)) {
+    return "Field category is invalid";
+  }
+
   if (!body.startDateTime) {
     return "Missing required field: startDateTime";
   }
+  if (typeof body.startDateTime !== "string") {
+    return "Field startDateTime must be a string";
+  }
+
   if (!body.endDateTime) {
     return "Missing required field: endDateTime";
   }
+  if (typeof body.endDateTime !== "string") {
+    return "Field endDateTime must be a string";
+  }
+
   if (body.capacity === undefined || body.capacity === null) {
     return "Missing required field: capacity";
   }
-  if (typeof body.capacity !== "number" || body.capacity <= 0) {
+  if (!Number.isFinite(body.capacity) || body.capacity <= 0) {
     return "Field capacity must be a positive number";
+  }
+
+  if (body.description !== undefined && body.description !== null && typeof body.description !== "string") {
+    return "Field description must be a string";
+  }
+
+  if (body.imageUrl !== undefined && body.imageUrl !== null && typeof body.imageUrl !== "string") {
+    return "Field imageUrl must be a string";
   }
 
   const startDate = new Date(body.startDateTime);
@@ -169,6 +209,53 @@ export function validateCreateEventBody(
   }
   if (endDate <= startDate) {
     return "Field endDateTime must be later than startDateTime";
+  }
+
+  if (body.location !== undefined) {
+    if (!body.location || typeof body.location !== "object" || Array.isArray(body.location)) {
+      return "Field location must be an object";
+    }
+
+    if (
+      body.location.type !== undefined &&
+      body.location.type !== "in-person" &&
+      body.location.type !== "virtual"
+    ) {
+      return "Field location.type must be either in-person or virtual";
+    }
+
+    if (body.location.queryText !== undefined && typeof body.location.queryText !== "string") {
+      return "Field location.queryText must be a string";
+    }
+
+    if (body.location.venueName !== undefined && typeof body.location.venueName !== "string") {
+      return "Field location.venueName must be a string";
+    }
+
+    if (body.location.address !== undefined && typeof body.location.address !== "string") {
+      return "Field location.address must be a string";
+    }
+
+    if (body.location.latitude !== undefined && !Number.isFinite(body.location.latitude)) {
+      return "Field location.latitude must be a number";
+    }
+
+    if (body.location.longitude !== undefined && !Number.isFinite(body.location.longitude)) {
+      return "Field location.longitude must be a number";
+    }
+
+    if ((body.location.type ?? "in-person") === "in-person") {
+      const hasLookupText =
+        typeof body.location.queryText === "string" && body.location.queryText.trim().length > 0;
+      const hasFallbackAddress =
+        typeof body.location.address === "string" && body.location.address.trim().length > 0;
+      const hasFallbackVenue =
+        typeof body.location.venueName === "string" && body.location.venueName.trim().length > 0;
+
+      if (!hasLookupText && !hasFallbackAddress && !hasFallbackVenue) {
+        return "Field location requires queryText, address, or venueName for in-person events";
+      }
+    }
   }
 
   return null;
