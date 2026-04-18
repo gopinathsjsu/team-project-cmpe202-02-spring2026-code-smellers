@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../auth/AuthProvider";
 import { EventCard } from "../components/ui/event-card";
-import { fetchMySavedEvents, type MySavedEventApi } from "../lib/meSaved";
+import { addSavedEvent, fetchMySavedEvents, removeSavedEvent, type MySavedEventApi } from "../lib/meSaved";
 import { fetchMyTickets, type MyTicketApi, type TicketRsvpStatus } from "../lib/meTickets";
 
 type DashboardEvent = {
@@ -17,7 +17,8 @@ type TicketCard = DashboardEvent & { ticketId: number; rsvpStatus: TicketRsvpSta
 
 type TabId = "overview" | "upcoming" | "past" | "saved" | "settings";
 
-function pastRsvpLabel(status: TicketRsvpStatus): string {
+/** RSVP pill text for Past list rows and Upcoming cards (aligned with ticket `rsvp_status`). */
+function rsvpStatusLabel(status: TicketRsvpStatus): string {
   if (status === "attended") {
     return "Attended";
   }
@@ -250,6 +251,28 @@ export default function DashboardUser() {
       .toUpperCase();
   }, [heroName]);
 
+  const handleSavedCardToggle = useCallback(
+    (eventId: string) => {
+      void (async () => {
+        const exists = saved.some((e) => e.id === eventId);
+        try {
+          if (exists) {
+            await removeSavedEvent(eventId);
+            setSaved((prev) => prev.filter((e) => e.id !== eventId));
+          } else {
+            await addSavedEvent(eventId);
+            const list = await fetchMySavedEvents();
+            setSaved(list.map(mapSavedApiToDashboard));
+            setSavedError(null);
+          }
+        } catch {
+          /* keep list unchanged */
+        }
+      })();
+    },
+    [saved],
+  );
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <section
@@ -351,6 +374,7 @@ export default function DashboardUser() {
                               date={e.date}
                               location={e.location}
                               imageUrl={e.imageUrl}
+                              statusLabel={rsvpStatusLabel(e.rsvpStatus)}
                             />
                           </li>
                         ))}
@@ -388,7 +412,15 @@ export default function DashboardUser() {
                       <ul className="grid gap-5">
                         {saved.slice(0, 2).map((e) => (
                           <li key={e.id}>
-                            <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
+                            <EventCard
+                              id={e.id}
+                              title={e.title}
+                              date={e.date}
+                              location={e.location}
+                              imageUrl={e.imageUrl}
+                              isSaved={saved.some((s) => s.id === e.id)}
+                              onSaveToggle={(id) => void handleSavedCardToggle(id)}
+                            />
                           </li>
                         ))}
                       </ul>
@@ -457,8 +489,6 @@ export default function DashboardUser() {
                 ) : null}
               </div>
             </div>
-
-            <SettingsPreviewCard />
           </aside>
         </div>
       ) : null}
@@ -477,7 +507,14 @@ export default function DashboardUser() {
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {upcoming.map((e) => (
                 <li key={e.ticketId}>
-                  <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
+                  <EventCard
+                    id={e.id}
+                    title={e.title}
+                    date={e.date}
+                    location={e.location}
+                    imageUrl={e.imageUrl}
+                    statusLabel={rsvpStatusLabel(e.rsvpStatus)}
+                  />
                 </li>
               ))}
             </ul>
@@ -499,7 +536,15 @@ export default function DashboardUser() {
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {saved.map((e) => (
                 <li key={e.id}>
-                  <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
+                  <EventCard
+                    id={e.id}
+                    title={e.title}
+                    date={e.date}
+                    location={e.location}
+                    imageUrl={e.imageUrl}
+                    isSaved={saved.some((s) => s.id === e.id)}
+                    onSaveToggle={(id) => void handleSavedCardToggle(id)}
+                  />
                 </li>
               ))}
             </ul>
@@ -539,7 +584,7 @@ export default function DashboardUser() {
                     </p>
                   </div>
                   <span className="inline-flex w-fit shrink-0 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
-                    {pastRsvpLabel(row.rsvpStatus)}
+                    {rsvpStatusLabel(row.rsvpStatus)}
                   </span>
                 </li>
               ))}

@@ -79,6 +79,7 @@ export function EventCard({
   imageUrl,
   date,
   location,
+  statusLabel,
   isSaved = false,
   onSaveToggle,
 }: EventCardProps) {
@@ -149,7 +150,16 @@ export function EventCard({
             {location}
           </span>
         </div>
-        <p className="mt-2 text-sm font-semibold text-accent-600">Free</p>
+        {statusLabel ? (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex w-fit shrink-0 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+              {statusLabel}
+            </span>
+            <p className="text-sm font-semibold text-accent-600">Free</p>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm font-semibold text-accent-600">Free</p>
+        )}
       </div>
     </Link>
   );
