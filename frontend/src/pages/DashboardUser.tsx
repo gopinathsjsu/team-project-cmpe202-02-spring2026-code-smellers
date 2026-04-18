@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
 import { EventCard } from "../components/ui/event-card";
 
 type DashboardEvent = {
@@ -69,35 +70,6 @@ const MOCK_PAST: { id: string; title: string; date: string; location: string }[]
     location: "San Jose, CA",
   },
 ] as const;
-
-function readJwtDisplayName(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const token = window.localStorage.getItem("authToken");
-    if (!token) {
-      return null;
-    }
-    const parts = token.split(".");
-    if (parts.length < 2) {
-      return null;
-    }
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(base64);
-    const payload = JSON.parse(json) as { email?: unknown; name?: unknown };
-    if (typeof payload.name === "string" && payload.name.trim()) {
-      return payload.name.trim();
-    }
-    if (typeof payload.email === "string" && payload.email.includes("@")) {
-      const local = payload.email.split("@")[0];
-      return local ? local.replace(/\./g, " ") : null;
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
 
 function UserIcon({ className }: { className?: string }) {
   return (
@@ -227,13 +199,28 @@ function SegmentedTab({
 
 export default function DashboardUser() {
   const [tab, setTab] = useState<TabId>("overview");
+  const { user } = useAuth();
 
   const upcoming = MOCK_UPCOMING;
   const saved = MOCK_SAVED;
   const past = MOCK_PAST;
 
-  const userDisplayName = useMemo(() => readJwtDisplayName(), []);
-  const heroName = userDisplayName ?? "Guest";
+  const heroName = useMemo(() => {
+    if (!user) {
+      return "Guest";
+    }
+    const dn = user.display_name?.trim();
+    if (dn) {
+      return dn;
+    }
+    const email = user.email?.trim();
+    if (email?.includes("@")) {
+      const local = email.split("@")[0];
+      return local ? local.replace(/\./g, " ") : "Guest";
+    }
+    return "Guest";
+  }, [user]);
+
   const initials = useMemo(() => {
     return heroName
       .split(/\s+/)
@@ -257,7 +244,7 @@ export default function DashboardUser() {
               className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 text-lg font-bold text-brand-700 ring-1 ring-neutral-200/80 sm:h-16 sm:w-16 sm:text-xl"
               aria-hidden="true"
             >
-              {userDisplayName ? initials : <UserIcon className="h-8 w-8 text-neutral-500" />}
+              {user ? initials : <UserIcon className="h-8 w-8 text-neutral-500" />}
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">DASHBOARD</p>
