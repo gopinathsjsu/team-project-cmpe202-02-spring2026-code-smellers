@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import type { NavbarProps } from "./Navbar.types";
+import { useAuth } from "../../auth/AuthProvider";
 
 function SearchIcon() {
   return (
@@ -69,21 +70,54 @@ function getInitials(name?: string) {
 }
 
 export function Navbar({
-  isLoggedIn,
+  // isLoggedIn, // now uses AuthContext to determine auth status
+  // user, // also uses AuthContext for user info
   browseLocation,
   onBrowseLocationChange,
   onSearch,
-  user,
 }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const { status, user, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  // const initials = useMemo(() => getInitials(user?.name), [user?.name]);
+  const initials = useMemo(() => getInitials(user?.display_name), [user?.display_name]);  
 
-  const initials = useMemo(() => getInitials(user?.name), [user?.name]);
+  // Close profile menu when clicking outside. Anyone got a better way to do this without a library?
+  useEffect(() => {
+  if (!isProfileMenuOpen) {
+    return;
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    if (
+      profileMenuRef.current &&
+      !profileMenuRef.current.contains(event.target as Node)
+    ) {
+      setIsProfileMenuOpen(false);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [isProfileMenuOpen]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsProfileMenuOpen(false);
+    navigate("/");
   };
 
   const searchControl = (
@@ -158,7 +192,7 @@ export function Navbar({
               <SearchIcon />
             </button>
 
-            {isLoggedIn ? (
+            {status === "authenticated" ? (
               <>
                 <NavLink to="/CreateEvent">
                   <Button variant="outline" size="sm">Create Event</Button>
@@ -170,15 +204,37 @@ export function Navbar({
                 >
                   <NotificationBellIcon />
                 </button>
-                <div
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white cursor-pointer"
-                  aria-label={`Signed in as ${user?.name ?? "Eventdull user"}`}
-                  title={user?.name ?? "Eventdull user"}
-                >
-                  {initials}
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsProfileMenuOpen((open) => !open)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    aria-label={`Signed in as ${user?.display_name ?? "Eventdull user"}`}
+                    aria-haspopup="menu"
+                    aria-expanded={isProfileMenuOpen}
+                    title={user?.display_name ?? "Eventdull user"}
+                  >
+                    {initials}
+                  </button>
+
+                  {isProfileMenuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-12 z-50 min-w-[10rem] overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={handleLogout}
+                        className="block w-full px-4 py-2 text-sm transition-colors hover:bg-neutral-50 cursor-pointer"
+                      >
+                        Log out
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
-            ) : (
+            ) : status === "unauthenticated" ? (
               <>
                 <NavLink to="/login">
                   <Button variant="outline" size="sm" className="cursor-pointer">Create Event</Button>
@@ -190,7 +246,7 @@ export function Navbar({
                   <Button variant="outline" size="sm" className="cursor-pointer">Sign up</Button>
                 </NavLink>
               </>
-            )}
+            ) : null}
           </div>
         </div>
 
