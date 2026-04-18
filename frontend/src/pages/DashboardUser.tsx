@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { useAuth } from "../auth/AuthProvider";
 import { EventCard } from "../components/ui/event-card";
+import { fetchMySavedEvents, type MySavedEventApi } from "../lib/meSaved";
+import { fetchMyTickets, type MyTicketApi, type TicketRsvpStatus } from "../lib/meTickets";
 
 type DashboardEvent = {
   id: string;
@@ -10,66 +13,44 @@ type DashboardEvent = {
   imageUrl?: string;
 };
 
+type TicketCard = DashboardEvent & { ticketId: number; rsvpStatus: TicketRsvpStatus };
+
 type TabId = "overview" | "upcoming" | "past" | "saved" | "settings";
 
-const MOCK_UPCOMING: DashboardEvent[] = [
-  {
-    id: "dash-up-1",
-    title: "Indie Night at The Guild",
-    date: "Fri, May 9 · 8:00 PM",
-    location: "San Jose, CA",
-    imageUrl:
-      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=70",
-  },
-  {
-    id: "dash-up-2",
-    title: "Farmers Market Food Walk",
-    date: "Sat, May 10 · 10:00 AM",
-    location: "Campbell, CA",
-    imageUrl:
-      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=70",
-  },
-] as const;
+function pastRsvpLabel(status: TicketRsvpStatus): string {
+  if (status === "attended") {
+    return "Attended";
+  }
+  if (status === "canceled") {
+    return "Canceled";
+  }
+  if (status === "pending") {
+    return "Pending";
+  }
+  return "Registered";
+}
 
-const MOCK_SAVED: DashboardEvent[] = [
-  {
-    id: "dash-sv-1",
-    title: "Jazz & Wine on the Patio",
-    date: "Thu, Jun 5 · 6:30 PM",
-    location: "Los Gatos, CA",
-    imageUrl:
-      "https://images.unsplash.com/photo-1415201364774-f6f488a3608a?auto=format&fit=crop&w=900&q=70",
-  },
-  {
-    id: "dash-sv-2",
-    title: "Tech Meetup: AI in Production",
-    date: "Wed, Jun 11 · 5:45 PM",
-    location: "Mountain View, CA",
-    imageUrl:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=70",
-  },
-  {
-    id: "dash-sv-3",
-    title: "Sunrise Yoga in the Park",
-    date: "Sun, Jun 15 · 6:00 AM",
-    location: "Palo Alto, CA",
-  },
-] as const;
+function mapTicketApiToCard(row: MyTicketApi): TicketCard {
+  return {
+    ticketId: row.ticketId,
+    id: row.eventId,
+    title: row.title,
+    date: row.date,
+    location: row.location,
+    imageUrl: row.imageUrl,
+    rsvpStatus: row.rsvpStatus,
+  };
+}
 
-const MOCK_PAST: { id: string; title: string; date: string; location: string }[] = [
-  {
-    id: "dash-past-1",
-    title: "Winter Lights Festival",
-    date: "Dec 14, 2025",
-    location: "San Jose, CA",
-  },
-  {
-    id: "dash-past-2",
-    title: "Community Cleanup Day",
-    date: "Mar 2, 2025",
-    location: "San Jose, CA",
-  },
-] as const;
+function mapSavedApiToDashboard(row: MySavedEventApi): DashboardEvent {
+  return {
+    id: row.eventId,
+    title: row.title,
+    date: row.date,
+    location: row.location,
+    imageUrl: row.imageUrl,
+  };
+}
 
 function UserIcon({ className }: { className?: string }) {
   return (
@@ -109,44 +90,6 @@ function SettingsPreviewCard() {
         </div>
       </div>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onSelect,
-  label,
-  badge,
-}: {
-  active: boolean;
-  onSelect: () => void;
-  label: string;
-  badge?: number;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={[
-        "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-fast",
-        active
-          ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/15"
-          : "bg-surface-raised text-neutral-600 ring-1 ring-neutral-200/80 hover:bg-neutral-50 hover:text-neutral-900",
-      ].join(" ")}
-    >
-      {label}
-      {typeof badge === "number" ? (
-        <span
-          className={
-            active
-              ? "rounded-full bg-white/20 px-2 py-0.5 text-xs tabular-nums"
-              : "rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-800 tabular-nums"
-          }
-        >
-          {badge}
-        </span>
-      ) : null}
-    </button>
   );
 }
 
@@ -201,9 +144,85 @@ export default function DashboardUser() {
   const [tab, setTab] = useState<TabId>("overview");
   const { user } = useAuth();
 
-  const upcoming = MOCK_UPCOMING;
-  const saved = MOCK_SAVED;
-  const past = MOCK_PAST;
+  const [upcoming, setUpcoming] = useState<TicketCard[]>([]);
+  const [upcomingLoading, setUpcomingLoading] = useState(true);
+  const [upcomingError, setUpcomingError] = useState<string | null>(null);
+
+  const [past, setPast] = useState<TicketCard[]>([]);
+  const [pastLoading, setPastLoading] = useState(true);
+  const [pastError, setPastError] = useState<string | null>(null);
+
+  const [saved, setSaved] = useState<DashboardEvent[]>([]);
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [savedError, setSavedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUpcoming([]);
+      setPast([]);
+      setSaved([]);
+      setUpcomingLoading(false);
+      setPastLoading(false);
+      setSavedLoading(false);
+      setUpcomingError(null);
+      setPastError(null);
+      setSavedError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setUpcomingLoading(true);
+    setPastLoading(true);
+    setSavedLoading(true);
+    setUpcomingError(null);
+    setPastError(null);
+    setSavedError(null);
+
+    void Promise.allSettled([
+      fetchMyTickets("upcoming"),
+      fetchMyTickets("past"),
+      fetchMySavedEvents(),
+    ]).then((results) => {
+      if (cancelled) {
+        return;
+      }
+      const [upRes, pastRes, savedRes] = results;
+      if (upRes.status === "fulfilled") {
+        setUpcoming(upRes.value.map(mapTicketApiToCard));
+        setUpcomingError(null);
+      } else {
+        setUpcoming([]);
+        setUpcomingError(
+          upRes.reason instanceof Error ? upRes.reason.message : "Could not load upcoming tickets.",
+        );
+      }
+      if (pastRes.status === "fulfilled") {
+        setPast(pastRes.value.map(mapTicketApiToCard));
+        setPastError(null);
+      } else {
+        setPast([]);
+        setPastError(
+          pastRes.reason instanceof Error ? pastRes.reason.message : "Could not load past tickets.",
+        );
+      }
+      if (savedRes.status === "fulfilled") {
+        setSaved(savedRes.value.map(mapSavedApiToDashboard));
+        setSavedError(null);
+      } else {
+        setSaved([]);
+        setSavedError(
+          savedRes.reason instanceof Error ? savedRes.reason.message : "Could not load saved events.",
+        );
+      }
+      setUpcomingLoading(false);
+      setPastLoading(false);
+      setSavedLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const heroName = useMemo(() => {
     if (!user) {
@@ -313,20 +332,38 @@ export default function DashboardUser() {
                   <h2 className="font-display text-lg font-bold text-neutral-900">Upcoming</h2>
                 </div>
                 <div className="p-5">
-                  <ul className="grid gap-5">
-                    {upcoming.slice(0, 2).map((e) => (
-                      <li key={e.id}>
-                        <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => setTab("upcoming")}
-                    className="mt-4 text-sm font-semibold text-brand-700 hover:text-brand-800"
-                  >
-                    View all upcoming →
-                  </button>
+                  {upcomingLoading ? (
+                    <p className="text-sm text-neutral-600">Loading…</p>
+                  ) : upcomingError ? (
+                    <p className="text-sm text-red-700" role="alert">
+                      {upcomingError}
+                    </p>
+                  ) : upcoming.length === 0 ? (
+                    <p className="text-sm text-neutral-600">No upcoming tickets.</p>
+                  ) : (
+                    <>
+                      <ul className="grid gap-5">
+                        {upcoming.slice(0, 2).map((e) => (
+                          <li key={e.ticketId}>
+                            <EventCard
+                              id={e.id}
+                              title={e.title}
+                              date={e.date}
+                              location={e.location}
+                              imageUrl={e.imageUrl}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={() => setTab("upcoming")}
+                        className="mt-4 text-sm font-semibold text-brand-700 hover:text-brand-800"
+                      >
+                        View all upcoming →
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -338,20 +375,32 @@ export default function DashboardUser() {
                   <h2 className="font-display text-lg font-bold text-neutral-900">Saved</h2>
                 </div>
                 <div className="p-5">
-                  <ul className="grid gap-5">
-                    {saved.slice(0, 2).map((e) => (
-                      <li key={e.id}>
-                        <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => setTab("saved")}
-                    className="mt-4 text-sm font-semibold text-brand-700 hover:text-brand-800"
-                  >
-                    View saved →
-                  </button>
+                  {savedLoading ? (
+                    <p className="text-sm text-neutral-600">Loading…</p>
+                  ) : savedError ? (
+                    <p className="text-sm text-red-700" role="alert">
+                      {savedError}
+                    </p>
+                  ) : saved.length === 0 ? (
+                    <p className="text-sm text-neutral-600">No saved events yet.</p>
+                  ) : (
+                    <>
+                      <ul className="grid gap-5">
+                        {saved.slice(0, 2).map((e) => (
+                          <li key={e.id}>
+                            <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={() => setTab("saved")}
+                        className="mt-4 text-sm font-semibold text-brand-700 hover:text-brand-800"
+                      >
+                        View saved →
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -365,24 +414,47 @@ export default function DashboardUser() {
               <div className="border-b border-neutral-100 px-5 py-4">
                 <h2 className="font-display text-lg font-bold text-neutral-900">Past</h2>
               </div>
-              <ul className="divide-y divide-neutral-100">
-                {past.map((row) => (
-                  <li key={row.id} className="px-5 py-4">
-                    <p className="text-sm font-semibold text-neutral-900">{row.title}</p>
-                    <p className="text-xs text-neutral-500">
-                      {row.date} · {row.location}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              {pastLoading ? (
+                <div className="px-5 py-4">
+                  <p className="text-sm text-neutral-600">Loading…</p>
+                </div>
+              ) : pastError ? (
+                <div className="px-5 py-4">
+                  <p className="text-sm text-red-700" role="alert">
+                    {pastError}
+                  </p>
+                </div>
+              ) : past.length === 0 ? (
+                <div className="px-5 py-4">
+                  <p className="text-sm text-neutral-600">No past events.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-neutral-100">
+                  {past.slice(0, 2).map((row) => (
+                    <li key={row.ticketId} className="px-5 py-4">
+                      <Link
+                        to={`/events/${row.id}`}
+                        className="text-sm font-semibold text-neutral-900 hover:text-brand-700"
+                      >
+                        {row.title}
+                      </Link>
+                      <p className="text-xs text-neutral-500">
+                        {row.date} · {row.location}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="px-5 py-4">
-                <button
-                  type="button"
-                  onClick={() => setTab("past")}
-                  className="text-sm font-semibold text-brand-700 hover:text-brand-800"
-                >
-                  View all past →
-                </button>
+                {!pastLoading && !pastError && past.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setTab("past")}
+                    className="text-sm font-semibold text-brand-700 hover:text-brand-800"
+                  >
+                    View all past →
+                  </button>
+                ) : null}
               </div>
             </div>
 
@@ -393,51 +465,86 @@ export default function DashboardUser() {
 
       {tab === "upcoming" ? (
         <div className="mt-4">
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((e) => (
-              <li key={e.id}>
-                <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
-              </li>
-            ))}
-          </ul>
+          {upcomingLoading ? (
+            <p className="text-sm text-neutral-600">Loading…</p>
+          ) : upcomingError ? (
+            <p className="text-sm text-red-700" role="alert">
+              {upcomingError}
+            </p>
+          ) : upcoming.length === 0 ? (
+            <p className="text-sm text-neutral-600">No upcoming tickets.</p>
+          ) : (
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {upcoming.map((e) => (
+                <li key={e.ticketId}>
+                  <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       ) : null}
 
       {tab === "saved" ? (
         <div className="mt-4">
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {saved.map((e) => (
-              <li key={e.id}>
-                <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
-              </li>
-            ))}
-          </ul>
+          {savedLoading ? (
+            <p className="text-sm text-neutral-600">Loading…</p>
+          ) : savedError ? (
+            <p className="text-sm text-red-700" role="alert">
+              {savedError}
+            </p>
+          ) : saved.length === 0 ? (
+            <p className="text-sm text-neutral-600">No saved events yet.</p>
+          ) : (
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {saved.map((e) => (
+                <li key={e.id}>
+                  <EventCard id={e.id} title={e.title} date={e.date} location={e.location} imageUrl={e.imageUrl} />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       ) : null}
 
       {tab === "past" ? (
         <div className="mt-4">
-          <ul
-            className="divide-y divide-neutral-100 overflow-hidden rounded-2xl border border-neutral-200/80 bg-surface-raised"
-            style={{ boxShadow: "var(--ds-shadow-card)" }}
-          >
-            {past.map((row) => (
-              <li
-                key={row.id}
-                className="flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-neutral-50/80 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold text-neutral-900">{row.title}</p>
-                  <p className="text-sm text-neutral-500">
-                    {row.date} · {row.location}
-                  </p>
-                </div>
-                <span className="inline-flex w-fit shrink-0 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
-                  Attended
-                </span>
-              </li>
-            ))}
-          </ul>
+          {pastLoading ? (
+            <p className="text-sm text-neutral-600">Loading…</p>
+          ) : pastError ? (
+            <p className="text-sm text-red-700" role="alert">
+              {pastError}
+            </p>
+          ) : past.length === 0 ? (
+            <p className="text-sm text-neutral-600">No past events.</p>
+          ) : (
+            <ul
+              className="divide-y divide-neutral-100 overflow-hidden rounded-2xl border border-neutral-200/80 bg-surface-raised"
+              style={{ boxShadow: "var(--ds-shadow-card)" }}
+            >
+              {past.map((row) => (
+                <li
+                  key={row.ticketId}
+                  className="flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-neutral-50/80 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <Link
+                      to={`/events/${row.id}`}
+                      className="font-semibold text-neutral-900 hover:text-brand-700"
+                    >
+                      {row.title}
+                    </Link>
+                    <p className="text-sm text-neutral-500">
+                      {row.date} · {row.location}
+                    </p>
+                  </div>
+                  <span className="inline-flex w-fit shrink-0 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+                    {pastRsvpLabel(row.rsvpStatus)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       ) : null}
 
