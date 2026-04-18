@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { useAuth } from "../auth/AuthProvider";
 import { Button } from "../components/ui/button";
 import { EventCard } from "../components/ui/event-card";
 import { addressUpToCity } from "../lib/addressDisplay";
@@ -11,6 +12,7 @@ import {
   type CalendarEventInput,
 } from "../lib/eventCalendar";
 import { apiUrl } from "../lib/api";
+import { addSavedEvent, fetchMySavedEvents, removeSavedEvent } from "../lib/meSaved";
 import type { SearchEvent } from "../services/searchApi";
 
 type LocationEmbed = {
@@ -286,6 +288,7 @@ function mapEmbedSrc(loc: LocationEmbed | null): string | null {
 
 export default function EventDetails() {
   const navigate = useNavigate();
+  const { status } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<EventDetailApi | null>(null);
   const [loading, setLoading] = useState(true);
@@ -369,6 +372,59 @@ export default function EventDetails() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!event) {
+      return;
+    }
+    if (status === "loading") {
+      return;
+    }
+    if (status !== "authenticated") {
+      setIsSaved(false);
+      return;
+    }
+
+    let cancelled = false;
+    const eventId = String(event.id);
+    void fetchMySavedEvents()
+      .then((list) => {
+        if (!cancelled) {
+          setIsSaved(list.some((row) => row.eventId === eventId));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsSaved(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [event, status]);
+
+  const handleToggleSaved = useCallback(async () => {
+    if (!event) {
+      return;
+    }
+    const eventId = String(event.id);
+    if (status !== "authenticated") {
+      setIsSaved((s) => !s);
+      return;
+    }
+    try {
+      if (isSaved) {
+        await removeSavedEvent(eventId);
+        setIsSaved(false);
+      } else {
+        await addSavedEvent(eventId);
+        setIsSaved(true);
+      }
+    } catch {
+      /* keep previous state */
+    }
+  }, [event, isSaved, status]);
 
   useEffect(() => {
     if (!event?.id) {
@@ -696,7 +752,7 @@ export default function EventDetails() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setIsSaved((s) => !s)}
+                      onClick={() => void handleToggleSaved()}
                       className={
                         isSaved
                           ? "flex h-10 w-10 items-center justify-center rounded-sm bg-accent-400 text-accent-950 transition-colors duration-fast hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
