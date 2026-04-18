@@ -8,7 +8,7 @@ function validateRegisterBody(body: RegisterRequestBody): string | null {
   if (!body.password) {
     return "Missing required field: password";
   }
-  if (!body.displayName) {
+  if (!body.name) {
     return "Missing required field: displayName";
   }
   const passwordLengthMin = 8;
@@ -32,7 +32,7 @@ type Fail = { ok: false; error: string; status: 400 | 500 };
 
 export async function registerUser(
   body: RegisterRequestBody,
-): Promise<{ ok: true; user: unknown } | Fail> {
+): Promise<{ ok: true; user: unknown; session: unknown } | Fail> {
   const invalidRequest = validateRegisterBody(body);
   if (invalidRequest) {
     return { ok: false, error: invalidRequest, status: 400 };
@@ -44,7 +44,7 @@ export async function registerUser(
     password: body.password as string,
     options: {
       data: {
-        displayName: body.displayName,
+        display_name: body.name, // using "display_name" to be consistent with the "users" table schema
         is_admin: body.is_admin,
       },
     },
@@ -66,7 +66,7 @@ export async function registerUser(
   const userRecord = {
     id: authUserId,
     email: body.email as string,
-    display_name: body.displayName as string,
+    display_name: body.name as string,
     is_admin: body.is_admin,
   } as any;
 
@@ -80,7 +80,7 @@ export async function registerUser(
     return { ok: false, error: createUserError.message, status: 400 };
   }
 
-  return { ok: true, user: createdUser };
+  return { ok: true, user: createdUser, session: signUpData.session };
 }
 
 export async function loginWithPassword(
@@ -110,4 +110,46 @@ export async function loginWithPassword(
     user: signInData.user,
     session: signInData.session,
   };
+}
+
+type MeSuccess = {
+  ok: true;
+  user: unknown;
+};
+
+type MeFail = {
+  ok: false;
+  error: string;
+  status: 401 | 500;
+};
+
+export async function getCurrentUser(
+  accessToken: string,
+): Promise<MeSuccess | MeFail> {
+  if (!accessToken) {
+    return { ok: false, error: "Missing access token", status: 401 };
+  }
+
+  const supabase = getSupabaseClient();
+
+  const {
+    data: { user: authUser },
+    error: authError,
+  } = await supabase.auth.getUser(accessToken);
+
+  if (authError || !authUser) {
+    return { ok: false, error: "Invalid or expired token", status: 401 };
+  }
+
+  const { data: appUser, error: userError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
+
+  if (userError) {
+    return { ok: false, error: userError.message, status: 500 };
+  }
+
+  return { ok: true, user: appUser };
 }
