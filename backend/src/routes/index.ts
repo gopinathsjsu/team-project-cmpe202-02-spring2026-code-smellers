@@ -2,7 +2,7 @@ import { Router } from "express";
 import eventRoutes from "./event.routes";
 import authRoutes from "./auth.routes";
 import organizerRoutes from "./organizer.routes";
-// import ticketRoutes from "./ticket.routes"; //NOT IMPLEMENTED YET
+import userRoutes from "./user.routes";
 
 const router = Router();
 
@@ -11,6 +11,6 @@ const router = Router();
 router.use("/events", eventRoutes);
 router.use("/auth", authRoutes);
 router.use("/organizers", organizerRoutes);
-// router.use("/tickets", ticketRoutes); //NOT IMPLEMENTED YET
+router.use("/users", userRoutes);
 
 export default router;

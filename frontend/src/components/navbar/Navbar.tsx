@@ -40,22 +40,6 @@ function LocationIcon() {
   );
 }
 
-function NotificationBellIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-6 w-6"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-    >
-      <path
-        d="M10 2.9C7.86 2.9 6.1 4.66 6.1 6.8V8.88C6.1 10.24 5.61 11.55 4.73 12.58L3.74 13.75C3.47 14.08 3.41 14.53 3.59 14.91C3.77 15.29 4.14 15.53 4.56 15.53H15.44C15.86 15.53 16.23 15.29 16.41 14.91C16.59 14.53 16.53 14.08 16.26 13.75L15.27 12.58C14.39 11.55 13.9 10.24 13.9 8.88V6.8C13.9 4.66 12.14 2.9 10 2.9Z"
-      />
-      <path d="M8.2 16.1C8.37 17.02 9.1 17.7 10 17.7C10.9 17.7 11.63 17.02 11.8 16.1H8.2Z" />
-    </svg>
-  );
-}
-
 function getInitials(name?: string) {
   if (!name) {
     return "ED";
@@ -86,7 +70,14 @@ export function Navbar({
   const navigate = useNavigate();
   
   // const initials = useMemo(() => getInitials(user?.name), [user?.name]);
-  const initials = useMemo(() => getInitials(user?.display_name), [user?.display_name]);  
+  const initials = useMemo(() => getInitials(user?.display_name), [user?.display_name]);
+
+  const dashboardPath = useMemo(() => {
+    if (user?.is_admin) {
+      return "/dashboard-admin";
+    }
+    return "/dashboard-user";
+  }, [user?.is_admin]);
 
   // Close profile menu when clicking outside. Anyone got a better way to do this without a library?
   useEffect(() => {
@@ -197,18 +188,14 @@ export function Navbar({
                 <NavLink to="/CreateEvent">
                   <Button variant="outline" size="sm">Create Event</Button>
                 </NavLink>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-sm text-brand-700 transition-colors duration-fast hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 cursor-pointer"
-                  aria-label="Notifications"
-                >
-                  <NotificationBellIcon />
-                </button>
+                <NavLink to={dashboardPath}>
+                  <Button variant="outline" size="sm">Dashboard</Button>
+                </NavLink>
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
                     onClick={() => setIsProfileMenuOpen((open) => !open)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-pill bg-brand-800 font-semibold text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-pill bg-brand-800 text-xs font-semibold text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                     aria-label={`Signed in as ${user?.display_name ?? "Eventdull user"}`}
                     aria-haspopup="menu"
                     aria-expanded={isProfileMenuOpen}
@@ -220,7 +207,7 @@ export function Navbar({
                   {isProfileMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 top-12 z-50 min-w-[10rem] overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg"
+                      className="absolute right-0 top-10 z-50 min-w-[10rem] overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg"
                     >
                       <button
                         type="button"

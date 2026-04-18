@@ -1,9 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
+import { useAuth } from "../auth/AuthProvider";
 import { EventCard } from "../components/ui/event-card";
+import { addSavedEvent, fetchMySavedEvents, removeSavedEvent } from "../lib/meSaved";
 import { useEventSearch } from "../hooks/useEventSearch";
 
 export default function SearchEvents() {
+  const { status } = useAuth();
+  const [savedIds, setSavedIds] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
 
   const params = useMemo(
@@ -20,6 +24,57 @@ export default function SearchEvents() {
     location: params.location,
     category: params.category,
   });
+
+  useEffect(() => {
+    if (status === "loading") {
+      return;
+    }
+    if (status !== "authenticated") {
+      setSavedIds([]);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchMySavedEvents()
+      .then((list) => {
+        if (!cancelled) {
+          setSavedIds(list.map((e) => e.eventId));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSavedIds([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  const toggleSaved = (id: string) => {
+    if (status !== "authenticated") {
+      setSavedIds((previous) =>
+        previous.includes(id) ? previous.filter((savedId) => savedId !== id) : [...previous, id],
+      );
+      return;
+    }
+
+    const isSaved = savedIds.includes(id);
+    void (async () => {
+      try {
+        if (isSaved) {
+          await removeSavedEvent(id);
+          setSavedIds((previous) => previous.filter((savedId) => savedId !== id));
+        } else {
+          await addSavedEvent(id);
+          setSavedIds((previous) => (previous.includes(id) ? previous : [...previous, id]));
+        }
+      } catch {
+        /* leave list unchanged */
+      }
+    })();
+  };
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -54,6 +109,8 @@ export default function SearchEvents() {
                 date={event.date}
                 location={event.location}
                 imageUrl={event.imageUrl}
+                isSaved={savedIds.includes(event.id)}
+                onSaveToggle={(id) => void toggleSaved(id)}
               />
             </li>
           ))}

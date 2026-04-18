@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { useAuth } from "../auth/AuthProvider";
 import { EventCard } from "../components/ui/event-card";
 import { apiUrl } from "../lib/api";
+import { addSavedEvent, fetchMySavedEvents, removeSavedEvent } from "../lib/meSaved";
 
 type CategoryIconKey =
   | "music"
@@ -204,6 +206,7 @@ type HomeProps = {
 };
 
 export default function Home({ browseLocation }: HomeProps) {
+  const { status } = useAuth();
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -283,10 +286,55 @@ export default function Home({ browseLocation }: HomeProps) {
     };
   }, [browseLocation]);
 
+  useEffect(() => {
+    if (status === "loading") {
+      return;
+    }
+    if (status !== "authenticated") {
+      setSavedIds([]);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchMySavedEvents()
+      .then((list) => {
+        if (!cancelled) {
+          setSavedIds(list.map((e) => e.eventId));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSavedIds([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
   const toggleSaved = (id: string) => {
-    setSavedIds((previous) =>
-      previous.includes(id) ? previous.filter((savedId) => savedId !== id) : [...previous, id],
-    );
+    if (status !== "authenticated") {
+      setSavedIds((previous) =>
+        previous.includes(id) ? previous.filter((savedId) => savedId !== id) : [...previous, id],
+      );
+      return;
+    }
+
+    const isSaved = savedIds.includes(id);
+    void (async () => {
+      try {
+        if (isSaved) {
+          await removeSavedEvent(id);
+          setSavedIds((previous) => previous.filter((savedId) => savedId !== id));
+        } else {
+          await addSavedEvent(id);
+          setSavedIds((previous) => (previous.includes(id) ? previous : [...previous, id]));
+        }
+      } catch {
+        /* leave list unchanged */
+      }
+    })();
   };
 
   const orderedCategorySlugs = sortCategoriesForDisplay(categorySlugs);
@@ -369,7 +417,7 @@ export default function Home({ browseLocation }: HomeProps) {
                 date={event.date}
                 location={event.location}
                 isSaved={savedIds.includes(event.id)}
-                onSaveToggle={toggleSaved}
+                onSaveToggle={(id) => void toggleSaved(id)}
               />
             ))}
           </div>
