@@ -1,7 +1,10 @@
 import { Router } from "express";
 import * as adminController from "../controllers/admin.controller";
+import { requireAdmin, requireAuth } from "../middleware/auth.middleware";
 
 const router = Router();
+
+router.use(requireAuth, requireAdmin);
 
 router.get("/dashboard", adminController.getAdminDashboard);
 router.get("/events/:eventId/review", adminController.getAdminEventReview);
