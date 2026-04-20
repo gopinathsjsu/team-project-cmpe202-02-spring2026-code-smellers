@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiUrl } from "../lib/api";
 import { getAuthToken } from "../lib/auth";
+import { Button } from "../components/ui/button";
 
 type AdminEvent = {
   id: string;
@@ -91,7 +92,14 @@ export default function DashboardAdmin() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="bg-surface-base">
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <header>
+          <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Admin Workspace</p>
+          <h1 className="mt-1 font-display text-4xl font-bold text-neutral-900">Moderation Dashboard</h1>
+          <p className="mt-2 text-sm text-neutral-600">Review pending organizer events and moderate approvals.</p>
+        </header>
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Pending", data?.summary.pendingCount],
@@ -99,14 +107,14 @@ export default function DashboardAdmin() {
           ["Rejected", data?.summary.rejectedCount],
           ["Total", data?.summary.totalCount],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-neutral-200 bg-white p-4 shadow-soft">
+          <div key={label} className="rounded-xl border border-neutral-200 bg-surface-raised p-4 shadow-soft">
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{label}</p>
             <p className="mt-2 text-3xl font-bold text-neutral-900">{value ?? 0}</p>
           </div>
         ))}
       </section>
 
-      <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-soft">
+      <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
         <h1 className="font-display text-2xl font-semibold text-neutral-900">Pending Events</h1>
         <div className="mt-4 space-y-3">
           {(data?.pendingEvents ?? []).map((event) => (
@@ -115,22 +123,23 @@ export default function DashboardAdmin() {
               <p className="text-sm text-neutral-600">Organizer: {event.organizerId}</p>
               <p className="text-sm text-neutral-500">Starts: {event.startDateTime ?? "TBA"}</p>
               <div className="mt-3 flex gap-2">
-                <button
+                <Button
                   type="button"
-                  className="rounded-sm bg-success-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
+                  size="sm"
                   disabled={updatingId === event.id}
                   onClick={() => handleModerate(event.id, "approved")}
                 >
                   Approve
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="rounded-sm bg-error-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
+                  size="sm"
+                  variant="danger"
                   disabled={updatingId === event.id}
                   onClick={() => handleModerate(event.id, "rejected")}
                 >
                   Reject
-                </button>
+                </Button>
               </div>
             </article>
           ))}
@@ -139,6 +148,7 @@ export default function DashboardAdmin() {
           ) : null}
         </div>
       </section>
+      </div>
     </div>
   );
 }
