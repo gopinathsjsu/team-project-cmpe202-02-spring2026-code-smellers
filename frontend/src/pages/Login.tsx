@@ -16,7 +16,10 @@ async function doLogin(email: string, password: string): Promise<[boolean, strin
     const response = await fetch(apiUrl("/api/auth/login"), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email: email,
+        password: password
+      }),
     });
     const data = await response.json();
 
@@ -51,6 +54,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [successMessage, setSuccessMessage] = useState<string | undefined>(
+    location.state?.successMessage
+  );
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8 pb-24">
     
@@ -67,16 +74,17 @@ export default function Login() {
             e.preventDefault(); // Stops page reload
 
             if(isSubmitting) { return; }
-                        
+            
+            setSuccessMessage(undefined);
             setFormError(undefined);
             setEmailError(undefined);
             setPasswordError(undefined);
 
-            if (!email || !password) { 
-              if(!email) { setEmailError("Email is required."); }
-              if (!password) { setPasswordError("Password is required."); }
-              return;
-            }
+            let hasError = false;
+            if(!email) { setEmailError("Email is required."); hasError = true; }
+            if (!password) { setPasswordError("Password is required."); hasError = true; }
+            
+            if (hasError) { return; }
             
             setIsSubmitting(true);
             const [succ, err] = await doLogin(email, password);
@@ -91,6 +99,13 @@ export default function Login() {
           }}
         >
           <div className="mt-4 space-y-6">
+
+            {/* Success Banner */}
+            {successMessage && !formError && (
+              <div className="rounded-md bg-success-50 p-3 text-sm text-success-600 border border-success-200">
+                {successMessage}
+              </div>
+            )}
 
             {/* Form Error Banner */}
             {formError && (
@@ -112,7 +127,7 @@ export default function Login() {
                   id="email-box"
                   name="email"
                   type="email"
-                  autocomplete="username"
+                  autoComplete="username"
                   placeholder="you@example.com"
                   value={email}
                   error={emailError}
@@ -137,7 +152,7 @@ export default function Login() {
                   id="password-box"
                   name="password"
                   type="password"
-                  autocomplete="current-password"
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   error={passwordError}
