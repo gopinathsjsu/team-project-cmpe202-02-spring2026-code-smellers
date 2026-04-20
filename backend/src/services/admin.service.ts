@@ -48,6 +48,15 @@ export type AdminModerationResult = {
   event: AdminEventReviewData["event"];
 };
 
+export type AdminBulkModerationItem = {
+  eventId: number;
+  approvalStatus: "approved" | "rejected";
+};
+
+export type AdminBulkModerationResult = {
+  updatedEvents: AdminModerationResult["event"][];
+};
+
 type Fail = { ok: false; error: string; status: 400 | 404 | 500 };
 
 type AdminEventRow = {
@@ -265,4 +274,46 @@ export async function moderateEvent(
         : null,
     },
   };
+}
+
+export async function bulkModerateEvents(
+  items: AdminBulkModerationItem[],
+): Promise<{ ok: true; updatedEvents: AdminBulkModerationResult["updatedEvents"] } | Fail> {
+  if (!Array.isArray(items) || items.length === 0) {
+    return { ok: false, error: "Missing moderation items", status: 400 };
+  }
+
+  const eventIds = items.map((item) => item.eventId);
+  const uniqueIds = [...new Set(eventIds)];
+  if (uniqueIds.length !== eventIds.length) {
+    return { ok: false, error: "Duplicate event ids are not allowed", status: 400 };
+  }
+
+  const supabase = getSupabaseClient();
+  const { data: existingEvents, error: lookupError } = await supabase
+    .from("events")
+    .select("id")
+    .in("id", uniqueIds);
+
+  if (lookupError) {
+    return { ok: false, error: lookupError.message, status: 500 };
+  }
+
+  const existingIds = new Set((existingEvents ?? []).map((event) => event.id));
+  const missingId = uniqueIds.find((id) => !existingIds.has(id));
+  if (missingId !== undefined) {
+    return { ok: false, error: `Event not found: ${missingId}`, status: 404 };
+  }
+
+  const updatedEvents: AdminBulkModerationResult["updatedEvents"] = [];
+  for (const item of items) {
+    const result = await moderateEvent(item.eventId, item.approvalStatus);
+    if (!result.ok) {
+      return result;
+    }
+
+    updatedEvents.push(result.event);
+  }
+
+  return { ok: true, updatedEvents };
 }
