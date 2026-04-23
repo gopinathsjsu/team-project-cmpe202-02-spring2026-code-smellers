@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "../lib/supabase";
 import type { Database } from "../types/database.types";
+import { registerUser } from "./auth.service";
 
 export type AdminDashboardPendingEvent = {
   id: string;
@@ -55,6 +56,12 @@ export type AdminBulkModerationItem = {
 
 export type AdminBulkModerationResult = {
   updatedEvents: AdminModerationResult["event"][];
+};
+
+export type CreateAdminUserInput = {
+  email: string;
+  password: string;
+  name: string;
 };
 
 type Fail = { ok: false; error: string; status: 400 | 404 | 500 };
@@ -316,4 +323,15 @@ export async function bulkModerateEvents(
   }
 
   return { ok: true, updatedEvents };
+}
+
+export async function createAdminUser(
+  input: CreateAdminUserInput,
+): Promise<{ ok: true; user: unknown; session: unknown } | Fail> {
+  return registerUser({
+    email: input.email,
+    password: input.password,
+    name: input.name,
+    is_admin: true,
+  });
 }

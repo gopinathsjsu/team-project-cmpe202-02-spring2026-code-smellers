@@ -83,6 +83,39 @@ function parseBulkModerationItems(body: unknown):
   return { ok: true, items };
 }
 
+function parseCreateAdminBody(body: unknown):
+  | { ok: true; payload: adminService.CreateAdminUserInput }
+  | { ok: false; error: string } {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { ok: false, error: "Request body must be a JSON object" };
+  }
+
+  const payload = body as {
+    email?: unknown;
+    password?: unknown;
+    name?: unknown;
+  };
+
+  const email = typeof payload.email === "string" ? payload.email.trim() : "";
+  const password = typeof payload.password === "string" ? payload.password : "";
+  const name = typeof payload.name === "string" ? payload.name.trim() : "";
+
+  if (!email) {
+    return { ok: false, error: "Missing required field: email" };
+  }
+  if (!password) {
+    return { ok: false, error: "Missing required field: password" };
+  }
+  if (!name) {
+    return { ok: false, error: "Missing required field: name" };
+  }
+
+  return {
+    ok: true,
+    payload: { email, password, name },
+  };
+}
+
 export const getAdminDashboard = async (_req: Request, res: Response) => {
   try {
     const result = await adminService.getAdminDashboard();
@@ -164,6 +197,30 @@ export const bulkModerateEvents = async (req: Request, res: Response) => {
     }
 
     return res.status(200).json({ updatedEvents: result.updatedEvents });
+  } catch (error) {
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unexpected error",
+    });
+  }
+};
+
+export const createAdminUser = async (req: Request, res: Response) => {
+  try {
+    if (!req.is("application/json")) {
+      return res.status(400).json({ error: "Request body must be JSON" });
+    }
+
+    const parsed = parseCreateAdminBody(req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: parsed.error });
+    }
+
+    const result = await adminService.createAdminUser(parsed.payload);
+    if (!result.ok) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    return res.status(201).json({ user: result.user });
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Unexpected error",
