@@ -15,7 +15,7 @@ type DashboardEvent = {
 
 type TicketCard = DashboardEvent & { ticketId: number; rsvpStatus: TicketRsvpStatus };
 
-type TabId = "overview" | "upcoming" | "past" | "saved" | "settings";
+type TabId = "overview" | "upcoming" | "past" | "saved";
 
 /** RSVP pill text for Past list rows and Upcoming cards (aligned with ticket `rsvp_status`). */
 function rsvpStatusLabel(status: TicketRsvpStatus): string {
@@ -68,29 +68,6 @@ function UserIcon({ className }: { className?: string }) {
       <path d="M20 21a8 8 0 0 0-16 0" />
       <circle cx="12" cy="8" r="4" />
     </svg>
-  );
-}
-
-function SettingsPreviewCard() {
-  return (
-    <div
-      className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-surface-raised"
-      style={{ boxShadow: "var(--ds-shadow-card)" }}
-    >
-      <div className="border-b border-neutral-100 px-5 py-4">
-        <h3 className="font-display text-lg font-bold text-neutral-900">Settings</h3>
-      </div>
-      <div className="space-y-3 px-5 py-4">
-        <div className="rounded-xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200/70">
-          <p className="text-sm font-semibold text-neutral-900">Notifications</p>
-          <p className="mt-0.5 text-xs text-neutral-500">Reminders, weekly digest, price drops</p>
-        </div>
-        <div className="rounded-xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200/70">
-          <p className="text-sm font-semibold text-neutral-900">Account</p>
-          <p className="mt-0.5 text-xs text-neutral-500">Email, password, privacy</p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -331,12 +308,6 @@ export default function DashboardUser() {
                 active={tab === "saved"}
                 onSelect={setTab}
                 badge={saved.length}
-              />
-              <SegmentedTab
-                tabId="settings"
-                label="Settings"
-                active={tab === "settings"}
-                onSelect={setTab}
               />
             </nav>
           </div>
@@ -593,11 +564,6 @@ export default function DashboardUser() {
         </div>
       ) : null}
 
-      {tab === "settings" ? (
-        <div className="mt-4">
-          <SettingsPreviewCard />
-        </div>
-      ) : null}
     </div>
   );
 }
