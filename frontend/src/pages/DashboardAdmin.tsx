@@ -17,6 +17,18 @@ type AdminDashboardData = {
   pendingEvents: AdminEvent[];
 };
 
+type AdminReviewEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  startDateTime: string | null;
+  endDateTime: string | null;
+  capacity: number | null;
+  approvalStatus: "pending" | "approved" | "rejected";
+  organizer: { id: string; displayName: string } | null;
+};
+
 async function fetchAdminDashboard(signal?: AbortSignal): Promise<AdminDashboardData> {
   const token = getAuthToken();
   if (!token) throw new Error("Missing auth token in localStorage");
@@ -50,11 +62,28 @@ async function moderateEvent(eventId: string, approvalStatus: "approved" | "reje
   }
 }
 
+async function fetchAdminEventReview(eventId: string): Promise<AdminReviewEvent> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Missing auth token in localStorage");
+
+  const response = await fetch(apiUrl(`/api/admin/events/${eventId}/review`), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const text = await response.text();
+  if (!response.ok) throw new Error(text || `Failed to fetch event review (${response.status})`);
+
+  return JSON.parse(text) as AdminReviewEvent;
+}
+
 export default function DashboardAdmin() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [review, setReview] = useState<AdminReviewEvent | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -88,6 +117,27 @@ export default function DashboardAdmin() {
       setError(err instanceof Error ? err.message : "Failed to update event");
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function handleReview(eventId: string) {
+    if (reviewingId === eventId && review) {
+      setReviewingId(null);
+      setReview(null);
+      return;
+    }
+
+    try {
+      setError(null);
+      setReviewLoading(true);
+      setReviewingId(eventId);
+      const detail = await fetchAdminEventReview(eventId);
+      setReview(detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load review details");
+      setReview(null);
+    } finally {
+      setReviewLoading(false);
     }
   }
 
@@ -126,6 +176,15 @@ export default function DashboardAdmin() {
                 <Button
                   type="button"
                   size="sm"
+                  variant="outline"
+                  isLoading={reviewLoading && reviewingId === event.id}
+                  onClick={() => handleReview(event.id)}
+                >
+                  {reviewingId === event.id && review ? "Hide details" : "Review details"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
                   disabled={updatingId === event.id}
                   onClick={() => handleModerate(event.id, "approved")}
                 >
@@ -141,6 +200,21 @@ export default function DashboardAdmin() {
                   Reject
                 </Button>
               </div>
+
+              {reviewingId === event.id && review ? (
+                <div className="mt-4 rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700">
+                  <p><span className="font-semibold text-neutral-900">Title:</span> {review.title}</p>
+                  <p><span className="font-semibold text-neutral-900">Organizer:</span> {review.organizer?.displayName ?? "Unknown"}</p>
+                  <p><span className="font-semibold text-neutral-900">Status:</span> {review.approvalStatus}</p>
+                  <p><span className="font-semibold text-neutral-900">Category:</span> {review.category ?? "N/A"}</p>
+                  <p><span className="font-semibold text-neutral-900">Capacity:</span> {review.capacity ?? "N/A"}</p>
+                  <p><span className="font-semibold text-neutral-900">Starts:</span> {review.startDateTime ?? "TBA"}</p>
+                  <p><span className="font-semibold text-neutral-900">Ends:</span> {review.endDateTime ?? "TBA"}</p>
+                  {review.description ? (
+                    <p className="mt-1"><span className="font-semibold text-neutral-900">Description:</span> {review.description}</p>
+                  ) : null}
+                </div>
+              ) : null}
             </article>
           ))}
           {(data?.pendingEvents ?? []).length === 0 ? (
