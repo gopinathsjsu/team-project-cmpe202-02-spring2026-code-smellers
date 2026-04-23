@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiUrl } from "../lib/api";
 import { getAuthToken } from "../lib/auth";
 import { Button } from "../components/ui/button";
+import { FormField, Input } from "../components/ui/input";
 
 type AdminEvent = {
   id: string;
@@ -96,6 +97,26 @@ async function bulkModerateEvents(
   }
 }
 
+async function createAdminUser(
+  payload: { email: string; password: string; name: string },
+): Promise<void> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Missing auth token in localStorage");
+
+  const response = await fetch(apiUrl("/api/admin/users/admins"), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error((await response.text()) || `Failed to create admin account (${response.status})`);
+  }
+}
+
 export default function DashboardAdmin() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +128,10 @@ export default function DashboardAdmin() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [review, setReview] = useState<AdminReviewEvent | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [newAdminName, setNewAdminName] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -223,6 +248,34 @@ export default function DashboardAdmin() {
     }
   }
 
+  async function handleCreateAdminAccount() {
+    try {
+      setError(null);
+      setSuccess(null);
+
+      if (!newAdminName.trim() || !newAdminEmail.trim() || !newAdminPassword) {
+        setError("Name, email, and password are required to create an admin account.");
+        return;
+      }
+
+      setCreatingAdmin(true);
+      await createAdminUser({
+        name: newAdminName.trim(),
+        email: newAdminEmail.trim(),
+        password: newAdminPassword,
+      });
+
+      setNewAdminName("");
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+      setSuccess("New admin account created successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create admin account");
+    } finally {
+      setCreatingAdmin(false);
+    }
+  }
+
   return (
     <div className="bg-surface-base">
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -250,6 +303,43 @@ export default function DashboardAdmin() {
             <p className="mt-2 text-3xl font-bold text-neutral-900">{value ?? 0}</p>
           </div>
         ))}
+      </section>
+
+      <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
+        <h1 className="font-display text-2xl font-semibold text-neutral-900">Create Admin Account</h1>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <FormField label="Name" htmlFor="new-admin-name" required>
+            <Input
+              id="new-admin-name"
+              value={newAdminName}
+              onChange={(e) => setNewAdminName(e.target.value)}
+              placeholder="Admin name"
+            />
+          </FormField>
+          <FormField label="Email" htmlFor="new-admin-email" required>
+            <Input
+              id="new-admin-email"
+              type="email"
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              placeholder="admin@example.com"
+            />
+          </FormField>
+          <FormField label="Password" htmlFor="new-admin-password" required>
+            <Input
+              id="new-admin-password"
+              type="password"
+              value={newAdminPassword}
+              onChange={(e) => setNewAdminPassword(e.target.value)}
+              placeholder="Minimum 8 characters"
+            />
+          </FormField>
+        </div>
+        <div className="mt-4">
+          <Button type="button" isLoading={creatingAdmin} onClick={handleCreateAdminAccount}>
+            Create Admin
+          </Button>
+        </div>
       </section>
 
       <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
