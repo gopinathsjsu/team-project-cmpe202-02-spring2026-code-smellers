@@ -99,6 +99,7 @@ async function bulkModerateEvents(
 export default function DashboardAdmin() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -147,11 +148,19 @@ export default function DashboardAdmin() {
   async function handleModerate(eventId: string, approvalStatus: "approved" | "rejected") {
     try {
       setError(null);
+      setSuccess(null);
       setUpdatingId(eventId);
       await moderateEvent(eventId, approvalStatus);
       const dashboard = await fetchAdminDashboard();
       setData(dashboard);
       setSelectedIds((prev) => prev.filter((id) => id !== eventId));
+
+      if (reviewingId === eventId && !dashboard.pendingEvents.some((event) => event.id === eventId)) {
+        setReviewingId(null);
+        setReview(null);
+      }
+
+      setSuccess(`Event ${approvalStatus} successfully.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update event");
     } finally {
@@ -168,6 +177,7 @@ export default function DashboardAdmin() {
 
     try {
       setError(null);
+      setSuccess(null);
       setReviewLoading(true);
       setReviewingId(eventId);
       const detail = await fetchAdminEventReview(eventId);
@@ -181,8 +191,16 @@ export default function DashboardAdmin() {
   }
 
   async function handleBulkModerate(approvalStatus: "approved" | "rejected") {
+    if (approvalStatus === "rejected") {
+      const confirmed = window.confirm(`Reject ${selectedIds.length} selected event(s)?`);
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       setError(null);
+      setSuccess(null);
       setBulkLoading(true);
 
       const items = selectedIds.map((id) => ({ eventId: Number(id), approvalStatus }));
@@ -191,6 +209,13 @@ export default function DashboardAdmin() {
       const dashboard = await fetchAdminDashboard();
       setData(dashboard);
       setSelectedIds([]);
+
+      if (reviewingId && !dashboard.pendingEvents.some((event) => event.id === reviewingId)) {
+        setReviewingId(null);
+        setReview(null);
+      }
+
+      setSuccess(`Selected events ${approvalStatus} successfully.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed bulk moderation");
     } finally {
@@ -206,6 +231,12 @@ export default function DashboardAdmin() {
           <h1 className="mt-1 font-display text-4xl font-bold text-neutral-900">Moderation Dashboard</h1>
           <p className="mt-2 text-sm text-neutral-600">Review pending organizer events and moderate approvals.</p>
         </header>
+
+        {success ? (
+          <section className="rounded-xl border border-success-200 bg-success-50 p-4 text-sm text-success-800">
+            {success}
+          </section>
+        ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
