@@ -13,6 +13,7 @@ import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Forgot from "./pages/Forgot.tsx";
 import SearchEvents from "./pages/SearchEvents.tsx";
+import UserSettings from "./pages/UserSettings.tsx";
 import { GuestOnlyRoute } from "./routes/GuestOnlyRoute.tsx";
 import { ProtectedRoute } from "./routes/ProtectedRoute.tsx";
 
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
             <Route path="dashboard-admin" element={<DashboardAdmin />} />
             <Route path="CreateEvent" element={<CreateEvent />} />
+            <Route path="settings" element={<UserSettings />} />
           </Route>
           <Route path="ui-demo" element={<ComponentDemo />} />
           <Route path="events/:id" element={<EventDetails />} />
