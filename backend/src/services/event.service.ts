@@ -51,6 +51,8 @@ type ResolvedLocation = {
   longitude: number | null;
 };
 
+type LocationInsertPayload = Database["public"]["Tables"]["locations"]["Insert"];
+
 async function resolveLocationForEvent(
   location: NonNullable<CreateEventRequestBody["location"]>,
 ): Promise<ResolvedLocation> {
@@ -133,23 +135,61 @@ async function getOrCreateLocation(
     return existingLocation.id;
   }
 
+  const locationInsert: LocationInsertPayload = {
+    type: locationType,
+    venue_name: venueName,
+    address,
+    latitutde: location.latitude ?? null,
+    longitude: location.longitude ?? null,
+  };
+
   const { data: createdLocation, error: insertError } = await supabase
     .from("locations")
-    .insert({
-      type: locationType,
-      venue_name: venueName,
-      address: address,
-      latitutde: location.latitude ?? null,
-      longitude: location.longitude ?? null,
-    } as any)
+    .insert(locationInsert)
     .select("id")
     .single();
+
+  if (insertError?.code === "23505" && insertError.message.includes("locations_pkey")) {
+    const nextLocationId = await getNextLocationId(supabase);
+
+    const { data: retriedLocation, error: retryError } = await supabase
+      .from("locations")
+      .insert({
+        ...locationInsert,
+        id: nextLocationId,
+      })
+      .select("id")
+      .single();
+
+    if (retryError) {
+      throw new Error(`Location insert failed: ${retryError.message}`);
+    }
+
+    return retriedLocation?.id ?? null;
+  }
 
   if (insertError) {
     throw new Error(`Location insert failed: ${insertError.message}`);
   }
 
   return createdLocation?.id ?? null;
+}
+
+async function getNextLocationId(
+  supabase: SupabaseClient<Database>,
+): Promise<number> {
+  const { data: latestLocation, error } = await supabase
+    .from("locations")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Location sequence recovery failed: ${error.message}`);
+  }
+
+  return (latestLocation?.id ?? 0) + 1;
 }
 
 export function validateCreateEventBody(
