@@ -52,6 +52,7 @@ type ResolvedLocation = {
 };
 
 type LocationInsertPayload = Database["public"]["Tables"]["locations"]["Insert"];
+type EventInsertPayload = Database["public"]["Tables"]["events"]["Insert"];
 
 async function resolveLocationForEvent(
   location: NonNullable<CreateEventRequestBody["location"]>,
@@ -190,6 +191,30 @@ async function getNextLocationId(
   }
 
   return (latestLocation?.id ?? 0) + 1;
+}
+
+async function getNextEventId(
+  supabase: SupabaseClient<Database>,
+): Promise<number> {
+  const { data: latestEvent, error } = await supabase
+    .from("events")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Event sequence recovery failed: ${error.message}`);
+  }
+
+  return (latestEvent?.id ?? 0) + 1;
+}
+
+function isEventPrimaryKeyConflict(message: string, code?: string): boolean {
+  if (code !== "23505") {
+    return false;
+  }
+  return /event(s)?_pkey/i.test(message);
 }
 
 export function validateCreateEventBody(
@@ -484,10 +509,10 @@ export async function createEventForOrganizer(
     }
   }
 
-  const eventRecord = {
+  const eventRecord: EventInsertPayload = {
     title: body.title as string,
     description: body.description ?? null,
-    category: body.category as string,
+    category: body.category as Database["public"]["Enums"]["event_category"],
     start_date_time: body.startDateTime as string,
     end_date_time: body.endDateTime as string,
     capacity: body.capacity as number,
@@ -496,13 +521,44 @@ export async function createEventForOrganizer(
     organizer_id: organizerId,
     approval_status: "pending",
     rsvp_count: 0,
-  } as any;
+  };
 
   const { data: createdEvent, error: eventError } = await supabase
     .from("events")
     .insert(eventRecord)
     .select("*")
     .single();
+
+  if (eventError && isEventPrimaryKeyConflict(eventError.message, eventError.code)) {
+    try {
+      const nextEventId = await getNextEventId(supabase);
+
+      const { data: retriedEvent, error: retryError } = await supabase
+        .from("events")
+        .insert({
+          ...eventRecord,
+          id: nextEventId,
+        })
+        .select("*")
+        .single();
+
+      if (retryError) {
+        return {
+          ok: false,
+          error: `Event creation failed: ${retryError.message}`,
+        };
+      }
+
+      return { ok: true, event: retriedEvent };
+    } catch (recoveryError) {
+      return {
+        ok: false,
+        error: recoveryError instanceof Error
+          ? `Event creation failed: ${recoveryError.message}`
+          : "Event creation failed: sequence recovery failed",
+      };
+    }
+  }
 
   if (eventError) {
     return {
