@@ -88,7 +88,7 @@ export type Database = {
           address: string | null
           created_at: string
           id: number
-          latitutde: number | null
+          latitude: number | null
           longitude: number | null
           type: Database["public"]["Enums"]["location_type"] | null
           venue_name: string | null
@@ -97,7 +97,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: number
-          latitutde?: number | null
+          latitude?: number | null
           longitude?: number | null
           type?: Database["public"]["Enums"]["location_type"] | null
           venue_name?: string | null
@@ -106,7 +106,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: number
-          latitutde?: number | null
+          latitude?: number | null
           longitude?: number | null
           type?: Database["public"]["Enums"]["location_type"] | null
           venue_name?: string | null

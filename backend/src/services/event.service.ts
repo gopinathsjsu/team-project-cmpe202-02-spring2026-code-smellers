@@ -16,6 +16,8 @@ export type EventSearchListItem = {
 type LocationEmbed = {
   venue_name: string | null;
   address: string | null;
+  latitude?: number | null; // adding new property to help with proximity search
+  longitude?: number | null;
 };
 
 type EventSearchRow = {
@@ -127,7 +129,7 @@ async function getOrCreateLocation(
       type: locationType,
       venue_name: venueName,
       address: address,
-      latitutde: location.latitude ?? null,
+      latitude: location.latitude ?? null,
       longitude: location.longitude ?? null,
     } as any)
     .select("id")
@@ -211,32 +213,60 @@ function formatEventListLocation(loc: LocationEmbed | null): string {
   return parts.length > 0 ? parts.join(", ") : "Location TBA";
 }
 
+function milesBetween(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const earthRadiusMiles = 3958.8;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusMiles * c;
+}
+
 export async function searchApprovedEvents(
   q: string,
   loc: string,
   category?: string,
-): Promise<{ ok: true; events: EventSearchListItem[] } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; events: EventSearchListItem[] } | { ok: false; error: string }
+> {
   const supabase = getSupabaseClient();
 
   let listQuery = supabase
     .from("events")
     .select(
       `
-        id,
-        title,
-        description,
-        start_date_time,
-        image_url,
-        locations ( venue_name, address )
-      `,
+      id,
+      title,
+      description,
+      start_date_time,
+      image_url,
+      locations ( venue_name, address, latitude, longitude )
+    `,
     )
     .eq("approval_status", "approved");
 
   if (category) {
-    listQuery = listQuery.eq("category", category as Database["public"]["Enums"]["event_category"]);
+    listQuery = listQuery.eq(
+      "category",
+      category as Database["public"]["Enums"]["event_category"],
+    );
   }
 
-  const { data, error } = await listQuery.order("start_date_time", { ascending: true, nullsFirst: false });
+  const { data, error } = await listQuery.order("start_date_time", {
+    ascending: true,
+    nullsFirst: false,
+  });
 
   if (error) {
     return { ok: false, error: error.message };
@@ -253,15 +283,57 @@ export async function searchApprovedEvents(
   }
 
   if (loc) {
-    rows = rows.filter((e) => {
-      const l = normalizeLocationEmbed(e.locations);
-      if (!l) {
-        return false;
+    const normalizedLoc = loc.trim().toLowerCase();
+    const placesSearchResponse = await searchLocationsByText(loc);
+
+    if (placesSearchResponse.ok) {
+      const referencePlace = placesSearchResponse.locations[0];
+
+      if (referencePlace) {
+        console.log(referencePlace)
+        const refLat = referencePlace.latitude;
+        const refLng = referencePlace.longitude;
+
+        if (typeof refLat !== "number" || typeof refLng !== "number") {
+          // If reference location is invalid, return no results (or skip filtering)
+          rows = [];
+        } else {
+          rows = rows.filter((e) => {
+            const l = normalizeLocationEmbed(e.locations);
+            if (!l) return false;
+
+            const eventLat = l.latitude;
+            const eventLng = l.longitude;
+
+            if (typeof eventLat !== "number" || typeof eventLng !== "number") {
+              return false;
+            }
+
+            const distanceMiles = milesBetween(
+              refLat,
+              refLng,
+              eventLat,
+              eventLng,
+            );
+
+            return distanceMiles <= 50; // Hardcoded, lmk if you want this adjustable.
+          });
+        }
+      } else {
+        rows = [];
       }
-      const vn = l.venue_name?.toLowerCase() ?? "";
-      const ad = l.address?.toLowerCase() ?? "";
-      return vn.includes(loc) || ad.includes(loc);
-    });
+    } else {
+      // fallback to text matching if place lookup fails
+      rows = rows.filter((e) => {
+        const l = normalizeLocationEmbed(e.locations);
+        if (!l) {
+          return false;
+        }
+        const vn = l.venue_name?.toLowerCase() ?? "";
+        const ad = l.address?.toLowerCase() ?? "";
+        return vn.includes(normalizedLoc) || ad.includes(normalizedLoc);
+      });
+    }
   }
 
   const events: EventSearchListItem[] = rows.map((row) => ({
@@ -279,7 +351,9 @@ export async function searchApprovedEvents(
 export async function getRelatedApprovedEvents(
   excludeEventId: number,
   preferCategory: string | null,
-): Promise<{ ok: true; events: EventSearchListItem[] } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; events: EventSearchListItem[] } | { ok: false; error: string }
+> {
   const supabase = getSupabaseClient();
 
   const { data, error } = await supabase
@@ -311,8 +385,12 @@ export async function getRelatedApprovedEvents(
         const aMatch = a.category === preferCategory ? 0 : 1;
         const bMatch = b.category === preferCategory ? 0 : 1;
         if (aMatch !== bMatch) return aMatch - bMatch;
-        const ta = a.start_date_time ? new Date(a.start_date_time).getTime() : 0;
-        const tb = b.start_date_time ? new Date(b.start_date_time).getTime() : 0;
+        const ta = a.start_date_time
+          ? new Date(a.start_date_time).getTime()
+          : 0;
+        const tb = b.start_date_time
+          ? new Date(b.start_date_time).getTime()
+          : 0;
         return ta - tb;
       })
     : rows;
@@ -333,10 +411,7 @@ export async function getRelatedApprovedEvents(
 export async function createEventForOrganizer(
   body: CreateEventRequestBody,
   organizerId: string,
-): Promise<
-  | { ok: true; event: unknown }
-  | { ok: false; error: string }
-> {
+): Promise<{ ok: true; event: unknown } | { ok: false; error: string }> {
   const validationError = validateCreateEventBody(body);
   if (validationError) {
     return { ok: false, error: validationError };
@@ -407,7 +482,7 @@ export async function getEventById(eventId: number) {
         category,
         capacity,
         rsvp_count,
-        locations ( venue_name, address, latitutde, longitude ),
+        locations ( venue_name, address, latitude, longitude ),
         organizer:users!events_organizer_id_fkey ( id, display_name )
       `,
     )
