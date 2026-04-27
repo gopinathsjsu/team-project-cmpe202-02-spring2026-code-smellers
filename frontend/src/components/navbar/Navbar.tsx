@@ -64,8 +64,10 @@ export function Navbar({
   const [locationInput, setLocationInput] = useState(browseLocation);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [isDashboardMenuOpen, setIsDashboardMenuOpen] = useState(false);
+  const dashboardMenuRef = useRef<HTMLDivElement>(null);
+
   const location = useLocation();
   const { status, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -89,10 +91,6 @@ export function Navbar({
       return;
     }
 
-    useEffect(() => {
-      setLocationInput(browseLocation);
-    }, [browseLocation]);
-
     function handleClickOutside(event: MouseEvent) {
       if (
         profileMenuRef.current &&
@@ -108,6 +106,29 @@ export function Navbar({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isProfileMenuOpen]);
+
+  // Close dashboard dropdown when clicking outside.
+  useEffect(() => {
+    if (!isDashboardMenuOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dashboardMenuRef.current &&
+        !dashboardMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsDashboardMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDashboardMenuOpen]);
+
+  useEffect(() => {
+    setLocationInput(browseLocation);
+  }, [browseLocation]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -199,11 +220,67 @@ export function Navbar({
                     Create Event
                   </Button>
                 </NavLink>
-                <NavLink to={dashboardPath}>
-                  <Button variant="outline" size="sm">
+
+                {/* Dashboard Dropdown */}
+                <div className="relative" ref={dashboardMenuRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsDashboardMenuOpen((prev) => !prev)}
+                    aria-haspopup="menu"
+                    aria-expanded={isDashboardMenuOpen}
+                    className="flex items-center gap-1 cursor-pointer"
+                  >
                     Dashboard
+                    <svg
+                      className="h-3.5 w-3.5 text-neutral-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
                   </Button>
-                </NavLink>
+
+                  {isDashboardMenuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute left-1/2 top-full mt-2 z-50 w-48 -translate-x-1/2 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg ring-1 ring-black/5"
+                    >
+                      <div className="py-1">
+                        <Link
+                          to="/dashboard-user"
+                          className="block px-4 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                          onClick={() => setIsDashboardMenuOpen(false)}
+                        >
+                          User Dashboard
+                        </Link>
+                        <Link
+                          to="/dashboard-organizer"
+                          className="block px-4 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                          onClick={() => setIsDashboardMenuOpen(false)}
+                        >
+                          Organizer Dashboard
+                        </Link>
+                        {user?.is_admin && (
+                          <Link
+                            to="/dashboard-admin"
+                            className="block border-t border-neutral-100 px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50"
+                            onClick={() => setIsDashboardMenuOpen(false)}
+                          >
+                            Admin Dashboard
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     type="button"
@@ -220,16 +297,30 @@ export function Navbar({
                   {isProfileMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 top-10 z-50 min-w-[10rem] overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg"
+                      className="absolute left-1/2 top-full mt-2 z-50 w-40 -translate-x-1/2 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg ring-1 ring-black/5"
                     >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={handleLogout}
-                        className="block w-full px-4 py-2 text-sm transition-colors hover:bg-neutral-50 cursor-pointer"
-                      >
-                        Log out
-                      </button>
+                      <div className="py-1">
+                        <div className="border-b border-neutral-100 px-4 py-2 text-center text-xs text-neutral-700 truncate">
+                          {user?.display_name || "Account"}
+                        </div>
+
+                        <Link
+                          to="/settings"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="block px-4 py-2 text-center text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                        >
+                          Settings
+                        </Link>
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={handleLogout}
+                          className="block w-full px-4 py-2 text-center text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
+                        >
+                          Log out
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

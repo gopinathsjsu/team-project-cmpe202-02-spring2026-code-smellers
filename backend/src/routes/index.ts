@@ -3,6 +3,7 @@ import eventRoutes from "./event.routes";
 import authRoutes from "./auth.routes";
 import organizerRoutes from "./organizer.routes";
 import userRoutes from "./user.routes";
+import adminRoutes from "./admin.routes";
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/events", eventRoutes);
 router.use("/auth", authRoutes);
 router.use("/organizers", organizerRoutes);
 router.use("/users", userRoutes);
+router.use("/admin", adminRoutes);
 
 export default router;
