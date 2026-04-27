@@ -19,7 +19,7 @@ type LocationEmbed = {
   venue_name: string | null;
   address: string | null;
   /** DB column name (typo preserved to match API). */
-  latitutde?: number | null;
+  latitude?: number | null;
   longitude?: number | null;
 };
 
@@ -271,7 +271,7 @@ function mapsSearchQuery(loc: LocationEmbed | null): string | null {
 /** Google Maps embed (no API key). Prefers lat/lng when stored on the location row. */
 function mapEmbedSrc(loc: LocationEmbed | null): string | null {
   if (!loc) return null;
-  const lat = loc.latitutde;
+  const lat = loc.latitude;
   const lng = loc.longitude;
   if (
     typeof lat === "number" &&
