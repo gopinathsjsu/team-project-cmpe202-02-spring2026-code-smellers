@@ -290,7 +290,6 @@ export async function searchApprovedEvents(
       const referencePlace = placesSearchResponse.locations[0];
 
       if (referencePlace) {
-        console.log(referencePlace)
         const refLat = referencePlace.latitude;
         const refLng = referencePlace.longitude;
 
