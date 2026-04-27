@@ -8,6 +8,18 @@ type RequestWithUser = Request & { user?: User };
 
 const EVENT_CATEGORY_SET = new Set<string>(Constants.public.Enums.event_category);
 
+function parsePositiveIntegerParam(raw: unknown): number | null {
+  const value = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : "";
+  if (!/^\d+$/.test(value)) {
+    return null;
+  }
+  const n = Number(value);
+  if (!Number.isSafeInteger(n) || n <= 0) {
+    return null;
+  }
+  return n;
+}
+
 function parseSearchCategoryParam(raw: unknown): { ok: true; category?: string } | { ok: false; error: string } {
   if (raw === undefined || raw === "") {
     return { ok: true };
@@ -124,8 +136,8 @@ export const getRelatedEvents = async (req: Request, res: Response) => {
 export const getEventById = async (req: Request, res: Response) => {
   try {
     const { eventId } = req.params;
-    const idNum = Number(eventId);
-    if (!Number.isFinite(idNum)) {
+    const idNum = parsePositiveIntegerParam(eventId);
+    if (idNum === null) {
       return res.status(400).json({ error: "Invalid event id" });
     }
     const result = await eventService.getEventById(idNum);
@@ -143,6 +155,14 @@ export const getEventById = async (req: Request, res: Response) => {
 
 export const createEvent = async (req: Request, res: Response) => {
   try {
+    if (!req.is("application/json")) {
+      return res.status(400).json({ error: "Request body must be JSON" });
+    }
+
+    if (req.body == null || typeof req.body !== "object" || Array.isArray(req.body)) {
+      return res.status(400).json({ error: "Request body must be a JSON object" });
+    }
+
     const body = req.body as CreateEventRequestBody;
 
     const organizerId = (req as RequestWithUser).user?.id;

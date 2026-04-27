@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { apiUrl } from "../lib/api";
+import { Button } from "../components/ui/button";
 
 type OrganizerEvent = {
   id: string;
@@ -112,18 +114,12 @@ function EventCard({ event }: { event: OrganizerEvent }) {
         <span className="rounded-pill bg-brand-50 px-3 py-1 text-brand-800">
           Tickets sold: <strong>{event.ticketsSold}</strong>
         </span>
-        <button
-          type="button"
-          className="rounded-sm border border-neutral-300 bg-surface-raised px-3 py-1 font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
-        >
+        <Button type="button" variant="outline" size="sm">
           View details
-        </button>
-        <button
-          type="button"
-          className="rounded-sm border border-neutral-300 bg-surface-raised px-3 py-1 font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
-        >
+        </Button>
+        <Button type="button" variant="outline" size="sm">
           Edit
-        </button>
+        </Button>
       </div>
     </article>
   );
@@ -225,13 +221,12 @@ export default function DashboardOrganizer() {
                   {lastSyncAt ? `Last synced ${lastSyncAt.toLocaleTimeString()}` : "Not synced yet"}
                 </p>
               </div>
-              <button
+              <Link
                 id="create-event"
-                type="button"
-                className="rounded-sm bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-fast hover:bg-brand-700"
+                to="/CreateEvent"
               >
-                + Create event
-              </button>
+                <Button type="button">+ Create event</Button>
+              </Link>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -325,24 +320,30 @@ export default function DashboardOrganizer() {
               <section className="rounded-xl border border-neutral-200 bg-surface-raised p-5 shadow-soft">
                 <h3 className="font-display text-xl font-semibold text-neutral-900">Quick Actions</h3>
                 <div className="mt-4 space-y-2">
-                  <button
+                  <Button
                     type="button"
-                    className="w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
+                    variant="outline"
+                    fullWidth
+                    className="justify-start"
                   >
                     Duplicate recent event
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
+                    variant="outline"
+                    fullWidth
+                    className="justify-start"
                   >
                     Download attendee CSV
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-left text-sm font-semibold text-neutral-700 transition-colors duration-fast hover:border-brand-300 hover:text-brand-800"
+                    variant="outline"
+                    fullWidth
+                    className="justify-start"
                   >
                     Open event check-in
-                  </button>
+                  </Button>
                 </div>
               </section>
 
