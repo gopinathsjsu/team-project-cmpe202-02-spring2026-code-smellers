@@ -61,6 +61,7 @@ export function Navbar({
   onSearch,
 }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationInput, setLocationInput] = useState(browseLocation);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -68,9 +69,12 @@ export function Navbar({
   const location = useLocation();
   const { status, user, logout } = useAuth();
   const navigate = useNavigate();
-  
+
   // const initials = useMemo(() => getInitials(user?.name), [user?.name]);
-  const initials = useMemo(() => getInitials(user?.display_name), [user?.display_name]);
+  const initials = useMemo(
+    () => getInitials(user?.display_name),
+    [user?.display_name],
+  );
 
   const dashboardPath = useMemo(() => {
     if (user?.is_admin) {
@@ -81,25 +85,29 @@ export function Navbar({
 
   // Close profile menu when clicking outside. Anyone got a better way to do this without a library?
   useEffect(() => {
-  if (!isProfileMenuOpen) {
-    return;
-  }
-
-  function handleClickOutside(event: MouseEvent) {
-    if (
-      profileMenuRef.current &&
-      !profileMenuRef.current.contains(event.target as Node)
-    ) {
-      setIsProfileMenuOpen(false);
+    if (!isProfileMenuOpen) {
+      return;
     }
-  }
 
-  document.addEventListener("mousedown", handleClickOutside);
+    useEffect(() => {
+      setLocationInput(browseLocation);
+    }, [browseLocation]);
 
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, [isProfileMenuOpen]);
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isProfileMenuOpen]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -134,8 +142,8 @@ export function Navbar({
           </span>
           <input
             type="text"
-            value={browseLocation}
-            onChange={(event) => onBrowseLocationChange(event.target.value)}
+            value={locationInput}
+            onChange={(event) => setLocationInput(event.target.value)}
             placeholder="San Jose"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
@@ -146,9 +154,10 @@ export function Navbar({
             type="button"
             aria-label="Search"
             className="h-7 w-7 shrink-0 !gap-0 !px-0 !py-0 active:bg-brand-800 cursor-pointer [&_svg]:h-3.5 [&_svg]:w-3.5"
-            onClick={() =>
-              onSearch?.({ query: searchQuery, location: browseLocation })
-            }
+            onClick={() => {
+              onBrowseLocationChange(locationInput);
+              onSearch?.({ query: searchQuery, location: locationInput });
+            }}
           >
             <SearchIcon />
           </Button>
@@ -186,10 +195,14 @@ export function Navbar({
             {status === "authenticated" ? (
               <>
                 <NavLink to="/CreateEvent">
-                  <Button variant="outline" size="sm">Create Event</Button>
+                  <Button variant="outline" size="sm">
+                    Create Event
+                  </Button>
                 </NavLink>
                 <NavLink to={dashboardPath}>
-                  <Button variant="outline" size="sm">Dashboard</Button>
+                  <Button variant="outline" size="sm">
+                    Dashboard
+                  </Button>
                 </NavLink>
                 <div className="relative" ref={profileMenuRef}>
                   <button
@@ -224,20 +237,40 @@ export function Navbar({
             ) : status === "unauthenticated" ? (
               <>
                 <NavLink to="/login">
-                  <Button variant="outline" size="sm" className="cursor-pointer">Create Event</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    Create Event
+                  </Button>
                 </NavLink>
                 <NavLink to="/login" state={{ from: location.pathname }}>
-                  <Button variant="outline" size="sm" className="cursor-pointer">Log in</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    Log in
+                  </Button>
                 </NavLink>
                 <NavLink to="/register">
-                  <Button variant="outline" size="sm" className="cursor-pointer">Sign up</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    Sign up
+                  </Button>
                 </NavLink>
               </>
             ) : null}
           </div>
         </div>
 
-        {isMobileSearchOpen ? <div className="pb-3 md:hidden">{searchControl}</div> : null}
+        {isMobileSearchOpen ? (
+          <div className="pb-3 md:hidden">{searchControl}</div>
+        ) : null}
       </div>
     </nav>
   );
