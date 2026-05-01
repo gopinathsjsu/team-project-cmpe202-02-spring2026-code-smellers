@@ -11,6 +11,7 @@ router.get("/", eventController.getEvents);
 router.get("/search", eventController.searchApprovedEvents);
 router.get("/:eventId/related", eventController.getRelatedEvents);
 router.get("/:eventId", eventController.getEventById);
+router.get("/:eventId/tickets/respond", eventTicketsController.respondToRsvpEmailLink);
 router.post("/", requireAuth, eventController.createEvent);
 router.post("/:eventId/tickets", requireAuth, eventTicketsController.rsvpForEvent);
 
