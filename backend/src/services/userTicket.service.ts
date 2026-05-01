@@ -277,3 +277,141 @@ export async function listMyPastTickets(
     };
   }
 }
+
+type RsvpResult =
+  | { ok: true; ticket: Database["public"]["Tables"]["tickets"]["Row"] }
+  | { ok: false; error: string; status: 400 | 401 | 403 | 404 | 409 | 500 };
+
+type EventCapacityRow = {
+  id: number;
+  approval_status: Database["public"]["Enums"]["event_approval_status"] | null;
+  capacity: number | null;
+  rsvp_count: number | null;
+};
+
+async function getApprovedEventForRsvp(
+  supabase: ReturnType<typeof getSupabaseClientForUserAccessToken>,
+  eventId: number,
+): Promise<{ ok: true; event: EventCapacityRow } | { ok: false; error: string; status: 404 | 500 }> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, approval_status, capacity, rsvp_count")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message, status: 500 };
+  }
+  if (!data || data.approval_status !== "approved") {
+    return { ok: false, error: "Event not found", status: 404 };
+  }
+
+  return { ok: true, event: data as EventCapacityRow };
+}
+
+/**
+ * Create an RSVP "ticket" for an approved event.
+ * - Creates a `tickets` row with `rsvp_status = pending` if no active ticket exists.
+ * - Enforces capacity based on `events.capacity` and `events.rsvp_count`.
+ * - Best-effort increments `events.rsvp_count` using an optimistic concurrency update.
+ */
+export async function rsvpForEvent(
+  accessToken: string,
+  customerId: string,
+  eventId: number,
+): Promise<RsvpResult> {
+  if (!accessToken) {
+    return { ok: false, error: "Missing access token", status: 401 };
+  }
+  if (!customerId?.trim()) {
+    return { ok: false, error: "Missing customer id", status: 400 };
+  }
+  if (!Number.isFinite(eventId) || eventId <= 0) {
+    return { ok: false, error: "Invalid event id", status: 400 };
+  }
+
+  try {
+    const supabase = getSupabaseClientForUserAccessToken(accessToken);
+
+    const evRes = await getApprovedEventForRsvp(supabase, eventId);
+    if (!evRes.ok) {
+      return evRes;
+    }
+
+    const capacity = evRes.event.capacity ?? null;
+    const existingCount = evRes.event.rsvp_count ?? 0;
+    if (capacity !== null && existingCount >= capacity) {
+      return { ok: false, error: "Event is at capacity", status: 409 };
+    }
+
+    // Prevent duplicate "active" RSVPs (pending/confirmed)
+    const { data: existingTicket, error: existingErr } = await supabase
+      .from("tickets")
+      .select("*")
+      .eq("customer_id", customerId)
+      .eq("event_id", eventId)
+      .in("rsvp_status", ["pending", "confirmed"])
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingErr) {
+      return { ok: false, error: existingErr.message, status: 500 };
+    }
+    if (existingTicket) {
+      return { ok: true, ticket: existingTicket as Database["public"]["Tables"]["tickets"]["Row"] };
+    }
+
+    const { data: createdTicket, error: insertErr } = await supabase
+      .from("tickets")
+      .insert({
+        customer_id: customerId,
+        event_id: eventId,
+        rsvp_status: "pending",
+        is_email_sent: false,
+      })
+      .select("*")
+      .single();
+
+    if (insertErr) {
+      return { ok: false, error: insertErr.message, status: 500 };
+    }
+
+    // Best-effort increment rsvp_count with optimistic concurrency (retry a few times)
+    const maxAttempts = 3;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const evRetry = await getApprovedEventForRsvp(supabase, eventId);
+      if (!evRetry.ok) {
+        break;
+      }
+      const current = evRetry.event.rsvp_count ?? 0;
+      const cap = evRetry.event.capacity ?? null;
+      if (cap !== null && current >= cap) {
+        break;
+      }
+
+      const { data: updated, error: updateErr } = await supabase
+        .from("events")
+        .update({ rsvp_count: current + 1 })
+        .eq("id", eventId)
+        .eq("rsvp_count", current)
+        .select("id")
+        .maybeSingle();
+
+      if (updateErr) {
+        break;
+      }
+      if (updated) {
+        break;
+      }
+    }
+
+    return { ok: true, ticket: createdTicket as Database["public"]["Tables"]["tickets"]["Row"] };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Unexpected error",
+      status: 500,
+    };
+  }
+}
