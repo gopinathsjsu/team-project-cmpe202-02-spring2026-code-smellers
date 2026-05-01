@@ -2,13 +2,12 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "../types/database.types";
 
 /**
- * Creates a Supabase client using env vars SUPABASE_URL and SUPABASE_ANON_KEY.
- * For server-side or tests, SUPABASE_SERVICE_ROLE_KEY can be used instead for full access (e.g. auth.users).
+ * Creates a Supabase client using env var SUPABASE_URL and the publishable key.
+ * This backend uses the publishable key only; do not place a service-role key here.
  */
 export function getSupabaseClient(): SupabaseClient<Database> {
   const url = process.env.SUPABASE_URL;
-  const key =
-process.env.SUPABASE_PUBLISHABLE_KEY;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) {
     throw new Error(

@@ -309,6 +309,30 @@ async function getApprovedEventForRsvp(
   return { ok: true, event: data as EventCapacityRow };
 }
 
+async function getNextTicketId(
+  supabase: ReturnType<typeof getSupabaseClientForUserAccessToken>,
+): Promise<number> {
+  const { data: latestTicket, error } = await supabase
+    .from("tickets")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Ticket sequence recovery failed: ${error.message}`);
+  }
+
+  return (latestTicket?.id ?? 0) + 1;
+}
+
+function isTicketPrimaryKeyConflict(message: string, code?: string): boolean {
+  if (code !== "23505") {
+    return false;
+  }
+  return /tickets_pkey/i.test(message);
+}
+
 /**
  * Create an RSVP "ticket" for an approved event.
  * - Creates a `tickets` row with `rsvp_status = pending` if no active ticket exists.
@@ -362,19 +386,34 @@ export async function rsvpForEvent(
       return { ok: true, ticket: existingTicket as Database["public"]["Tables"]["tickets"]["Row"] };
     }
 
-    const { data: createdTicket, error: insertErr } = await supabase
-      .from("tickets")
-      .insert({
-        customer_id: customerId,
-        event_id: eventId,
-        rsvp_status: "pending",
-        is_email_sent: false,
-      })
-      .select("*")
-      .single();
+    const ticketInsert = {
+      customer_id: customerId,
+      event_id: eventId,
+      rsvp_status: "pending" as const,
+      is_email_sent: false,
+    };
 
-    if (insertErr) {
-      return { ok: false, error: insertErr.message, status: 500 };
+    let createdTicket: Database["public"]["Tables"]["tickets"]["Row"] | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data, error: insertErr } = await supabase
+        .from("tickets")
+        .insert(attempt === 0 ? ticketInsert : { ...ticketInsert, id: await getNextTicketId(supabase) })
+        .select("*")
+        .single();
+
+      if (insertErr) {
+        if (attempt === 0 && isTicketPrimaryKeyConflict(insertErr.message, insertErr.code)) {
+          continue;
+        }
+        return { ok: false, error: insertErr.message, status: 500 };
+      }
+
+      createdTicket = data as Database["public"]["Tables"]["tickets"]["Row"];
+      break;
+    }
+
+    if (!createdTicket) {
+      return { ok: false, error: "Ticket creation failed: sequence recovery failed", status: 500 };
     }
 
     // Best-effort increment rsvp_count with optimistic concurrency (retry a few times)
@@ -406,7 +445,7 @@ export async function rsvpForEvent(
       }
     }
 
-    return { ok: true, ticket: createdTicket as Database["public"]["Tables"]["tickets"]["Row"] };
+    return { ok: true, ticket: createdTicket };
   } catch (e) {
     return {
       ok: false,
