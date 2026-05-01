@@ -117,9 +117,11 @@ function EventCard({ event }: { event: OrganizerEvent }) {
         <Button type="button" variant="outline" size="sm">
           View details
         </Button>
-        <Button type="button" variant="outline" size="sm">
-          Edit
-        </Button>
+        <Link to={`/dashboard-organizer/events/${event.id}/edit`}>
+          <Button type="button" variant="outline" size="sm">
+            Edit
+          </Button>
+        </Link>
       </div>
     </article>
   );
