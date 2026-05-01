@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useAuth } from "../auth/AuthProvider";
 import { Button } from "../components/ui/button";
 import { EventCard } from "../components/ui/event-card";
@@ -14,6 +14,7 @@ import {
 import { apiUrl } from "../lib/api";
 import { addSavedEvent, fetchMySavedEvents, removeSavedEvent } from "../lib/meSaved";
 import type { SearchEvent } from "../services/searchApi";
+import { getAuthToken } from "../lib/auth";
 
 type LocationEmbed = {
   venue_name: string | null;
@@ -288,12 +289,16 @@ function mapEmbedSrc(loc: LocationEmbed | null): string | null {
 
 export default function EventDetails() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { status } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<EventDetailApi | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [isRsvping, setIsRsvping] = useState(false);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
+  const [hasRsvped, setHasRsvped] = useState(false);
   const [related, setRelated] = useState<SearchEvent[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
@@ -425,6 +430,61 @@ export default function EventDetails() {
       /* keep previous state */
     }
   }, [event, isSaved, status]);
+
+  const handleRsvp = useCallback(async () => {
+    if (!event) {
+      return;
+    }
+
+    if (status !== "authenticated") {
+      navigate("/login", { state: { from: `${location.pathname}${location.search}` } });
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      navigate("/login", { state: { from: `${location.pathname}${location.search}` } });
+      return;
+    }
+
+    setIsRsvping(true);
+    setRsvpError(null);
+
+    try {
+      const response = await fetch(apiUrl(`/api/events/${event.id}/tickets`), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const text = await response.text();
+      let body: unknown = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = null;
+      }
+
+      if (!response.ok) {
+        const message =
+          body &&
+          typeof body === "object" &&
+          body !== null &&
+          "error" in body &&
+          typeof (body as { error: unknown }).error === "string"
+            ? (body as { error: string }).error
+            : `Request failed (${response.status})`;
+        throw new Error(message);
+      }
+
+      setHasRsvped(true);
+    } catch (error) {
+      setRsvpError(error instanceof Error ? error.message : "Could not register for this event.");
+    } finally {
+      setIsRsvping(false);
+    }
+  }, [event, location.pathname, location.search, navigate, status]);
 
   useEffect(() => {
     if (!event?.id) {
@@ -771,9 +831,23 @@ export default function EventDetails() {
                     <p className="mt-1 text-sm text-neutral-600">
                       Press RSVP to register for this event.
                     </p>
-                    <Button type="button" variant="primary" size="lg" fullWidth className="mt-6">
-                      RSVP
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="lg"
+                      fullWidth
+                      className="mt-6"
+                      onClick={() => void handleRsvp()}
+                      isLoading={isRsvping}
+                      disabled={hasRsvped}
+                    >
+                      {hasRsvped ? "Registered" : "RSVP"}
                     </Button>
+                    {rsvpError ? (
+                      <p className="mt-3 text-sm text-error-600">{rsvpError}</p>
+                    ) : hasRsvped ? (
+                      <p className="mt-3 text-sm text-emerald-700">You are registered for this event.</p>
+                    ) : null}
                     {googleCalendarUrl ? (
                       <details className="mt-4 open:[&_.calendar-chevron]:rotate-180">
                         <summary className="flex w-full cursor-pointer list-none items-center justify-center gap-2 rounded-sm border-2 border-brand-600 bg-transparent px-4 py-2 text-base !font-semibold tracking-normal text-brand-600 transition-colors duration-fast hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
