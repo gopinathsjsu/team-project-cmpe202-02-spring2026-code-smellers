@@ -124,7 +124,13 @@ function EventCard({ event }: { event: OrganizerEvent }) {
           to={`/dashboard-organizer/events/${event.id}/edit`}
           className="inline-flex items-center justify-center rounded-sm border-2 border-brand-600 bg-transparent px-2.5 py-1 text-sm font-semibold tracking-normal text-brand-600 transition-colors duration-fast hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         >
-          Manage attendees
+          Edit
+        </Link>
+        <Link
+          to={`/dashboard-organizer/events/${event.id}/attendees`}
+          className="inline-flex items-center justify-center rounded-sm border-2 border-brand-600 bg-transparent px-2.5 py-1 text-sm font-semibold tracking-normal text-brand-600 transition-colors duration-fast hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        >
+          Attendees
         </Link>
       </div>
     </article>
