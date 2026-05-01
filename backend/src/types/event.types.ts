@@ -15,3 +15,19 @@ export interface CreateEventRequestBody {
     longitude?: number;
   };
 }
+
+export interface UpdateOrganizerEventRequestBody {
+  startDateTime?: string;
+  endDateTime?: string;
+  capacity?: number;
+  location?:
+    | {
+        type?: "in-person" | "virtual";
+        queryText?: string;
+        venueName?: string;
+        address?: string;
+        latitude?: number;
+        longitude?: number;
+      }
+    | null;
+}

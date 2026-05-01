@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../lib/supabase";
 import type { Database } from "../types/database.types";
 import type { CreateEventRequestBody } from "../types/event.types";
+import type { UpdateOrganizerEventRequestBody } from "../types/event.types";
 import { addressUpToCity } from "../utils/addressDisplay";
 import { searchLocationsByText } from "../utils/googlePlaces";
 
@@ -680,4 +681,250 @@ export async function getEventById(eventId: number) {
   }
 
   return { ok: true, event: data };
+}
+
+type OrganizerEventDetail = {
+  id: number;
+  title: string;
+  start_date_time: string | null;
+  end_date_time: string | null;
+  capacity: number | null;
+  rsvp_count: number | null;
+  approval_status: Database["public"]["Enums"]["event_approval_status"] | null;
+  locations: {
+    id: number;
+    type: Database["public"]["Enums"]["location_type"] | null;
+    venue_name: string | null;
+    address: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
+};
+
+type ServiceFail = { ok: false; error: string; status: 400 | 403 | 404 | 500 };
+
+function parseOptionalIsoDateTime(raw: unknown): { ok: true; value?: string } | { ok: false; error: string } {
+  if (raw === undefined) {
+    return { ok: true };
+  }
+  if (typeof raw !== "string") {
+    return { ok: false, error: "Date/time must be an ISO string" };
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { ok: false, error: "Date/time cannot be empty" };
+  }
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) {
+    return { ok: false, error: "Invalid ISO date/time" };
+  }
+  return { ok: true, value: d.toISOString() };
+}
+
+function validateUpdateOrganizerEventBody(body: UpdateOrganizerEventRequestBody): string | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return "Request body must be a JSON object";
+  }
+
+  const hasAny =
+    body.startDateTime !== undefined ||
+    body.endDateTime !== undefined ||
+    body.capacity !== undefined ||
+    body.location !== undefined;
+  if (!hasAny) {
+    return "Request body must include at least one field to update";
+  }
+
+  if (body.capacity !== undefined) {
+    if (!Number.isFinite(body.capacity) || body.capacity <= 0) {
+      return "Field capacity must be a positive number";
+    }
+  }
+
+  if (body.location !== undefined && body.location !== null) {
+    if (typeof body.location !== "object" || Array.isArray(body.location)) {
+      return "Field location must be an object or null";
+    }
+    if (
+      body.location.type !== undefined &&
+      body.location.type !== "in-person" &&
+      body.location.type !== "virtual"
+    ) {
+      return "Field location.type must be either in-person or virtual";
+    }
+    if (body.location.queryText !== undefined && typeof body.location.queryText !== "string") {
+      return "Field location.queryText must be a string";
+    }
+    if (body.location.venueName !== undefined && typeof body.location.venueName !== "string") {
+      return "Field location.venueName must be a string";
+    }
+    if (body.location.address !== undefined && typeof body.location.address !== "string") {
+      return "Field location.address must be a string";
+    }
+    if (body.location.latitude !== undefined && !Number.isFinite(body.location.latitude)) {
+      return "Field location.latitude must be a number";
+    }
+    if (body.location.longitude !== undefined && !Number.isFinite(body.location.longitude)) {
+      return "Field location.longitude must be a number";
+    }
+
+    if ((body.location.type ?? "in-person") === "in-person") {
+      const hasLookupText =
+        typeof body.location.queryText === "string" && body.location.queryText.trim().length > 0;
+      const hasFallbackAddress =
+        typeof body.location.address === "string" && body.location.address.trim().length > 0;
+      const hasFallbackVenue =
+        typeof body.location.venueName === "string" && body.location.venueName.trim().length > 0;
+      if (!hasLookupText && !hasFallbackAddress && !hasFallbackVenue) {
+        return "Field location requires queryText, address, or venueName for in-person events";
+      }
+    }
+  }
+
+  if (body.startDateTime !== undefined) {
+    const parsed = parseOptionalIsoDateTime(body.startDateTime);
+    if (!parsed.ok) return parsed.error;
+  }
+  if (body.endDateTime !== undefined) {
+    const parsed = parseOptionalIsoDateTime(body.endDateTime);
+    if (!parsed.ok) return parsed.error;
+  }
+
+  return null;
+}
+
+export async function getEventForOrganizer(
+  eventId: number,
+  organizerId: string,
+): Promise<{ ok: true; event: OrganizerEventDetail } | ServiceFail> {
+  if (!Number.isFinite(eventId) || eventId <= 0) {
+    return { ok: false, error: "Invalid event id", status: 400 };
+  }
+  if (!organizerId?.trim()) {
+    return { ok: false, error: "Missing organizer id", status: 400 };
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      `
+        id,
+        title,
+        start_date_time,
+        end_date_time,
+        capacity,
+        rsvp_count,
+        approval_status,
+        locations:locations ( id, type, venue_name, address, latitude, longitude )
+      `,
+    )
+    .eq("id", eventId)
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message, status: 500 };
+  }
+  if (!data) {
+    return { ok: false, error: "Event not found", status: 404 };
+  }
+
+  const row = data as unknown as OrganizerEventDetail & { locations: OrganizerEventDetail["locations"] | OrganizerEventDetail["locations"][] | null };
+  const loc = Array.isArray(row.locations) ? (row.locations[0] ?? null) : row.locations;
+
+  return {
+    ok: true,
+    event: {
+      ...row,
+      locations: loc,
+    },
+  };
+}
+
+export async function updateEventForOrganizer(
+  eventId: number,
+  organizerId: string,
+  body: UpdateOrganizerEventRequestBody,
+): Promise<{ ok: true; event: unknown } | ServiceFail> {
+  const validationError = validateUpdateOrganizerEventBody(body);
+  if (validationError) {
+    return { ok: false, error: validationError, status: 400 };
+  }
+
+  const supabase = getSupabaseClient();
+
+  const existingResult = await getEventForOrganizer(eventId, organizerId);
+  if (!existingResult.ok) {
+    return existingResult;
+  }
+
+  const existing = existingResult.event;
+  const existingStart = existing.start_date_time;
+  const existingEnd = existing.end_date_time;
+
+  const startParsed = body.startDateTime !== undefined ? parseOptionalIsoDateTime(body.startDateTime) : { ok: true as const, value: undefined as string | undefined };
+  if (!startParsed.ok) return { ok: false, error: startParsed.error, status: 400 };
+  const endParsed = body.endDateTime !== undefined ? parseOptionalIsoDateTime(body.endDateTime) : { ok: true as const, value: undefined as string | undefined };
+  if (!endParsed.ok) return { ok: false, error: endParsed.error, status: 400 };
+
+  const nextStart = startParsed.value ?? (existingStart ? new Date(existingStart).toISOString() : undefined);
+  const nextEnd = endParsed.value ?? (existingEnd ? new Date(existingEnd).toISOString() : undefined);
+  if (nextStart && nextEnd) {
+    if (new Date(nextEnd) <= new Date(nextStart)) {
+      return { ok: false, error: "endDateTime must be later than startDateTime", status: 400 };
+    }
+  }
+
+  if (body.capacity !== undefined) {
+    const sold = existing.rsvp_count ?? 0;
+    if (body.capacity < sold) {
+      return { ok: false, error: `capacity cannot be less than current RSVPs (${sold})`, status: 400 };
+    }
+  }
+
+  let nextLocationId: number | null | undefined = undefined;
+  if (body.location !== undefined) {
+    if (body.location === null) {
+      nextLocationId = null;
+    } else {
+      try {
+        const resolvedLocation = await resolveLocationForEvent(body.location);
+        nextLocationId = await getOrCreateLocation(supabase, resolvedLocation);
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Location operation failed", status: 400 };
+      }
+    }
+  }
+
+  const updatePayload: Database["public"]["Tables"]["events"]["Update"] = {};
+  if (nextStart) updatePayload.start_date_time = nextStart;
+  if (nextEnd) updatePayload.end_date_time = nextEnd;
+  if (body.capacity !== undefined) updatePayload.capacity = body.capacity;
+  if (nextLocationId !== undefined) updatePayload.location_id = nextLocationId;
+
+  const { data: updated, error } = await supabase
+    .from("events")
+    .update(updatePayload)
+    .eq("id", eventId)
+    .eq("organizer_id", organizerId)
+    .select(
+      `
+        id,
+        title,
+        start_date_time,
+        end_date_time,
+        capacity,
+        rsvp_count,
+        approval_status,
+        locations:locations ( id, type, venue_name, address, latitude, longitude )
+      `,
+    )
+    .single();
+
+  if (error) {
+    return { ok: false, error: error.message, status: 500 };
+  }
+
+  return { ok: true, event: updated };
 }
