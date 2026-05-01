@@ -66,6 +66,61 @@ export const getOrganizerEventById = async (req: Request, res: Response) => {
   }
 };
 
+export const getOrganizerEventAttendees = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as RequestWithUser).user?.id;
+    if (!organizerId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const eventId = parsePositiveIntegerParam(req.params.eventId);
+    if (eventId === null) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    const result = await eventService.getOrganizerEventAttendees(eventId, organizerId);
+    if (!result.ok) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unexpected error",
+    });
+  }
+};
+
+export const removeOrganizerEventAttendee = async (req: Request, res: Response) => {
+  try {
+    const organizerId = (req as RequestWithUser).user?.id;
+    if (!organizerId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const eventId = parsePositiveIntegerParam(req.params.eventId);
+    if (eventId === null) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    const ticketId = parsePositiveIntegerParam(req.params.ticketId);
+    if (ticketId === null) {
+      return res.status(400).json({ error: "Invalid ticket id" });
+    }
+
+    const result = await eventService.removeOrganizerEventAttendee(eventId, organizerId, ticketId);
+    if (!result.ok) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unexpected error",
+    });
+  }
+};
+
 export const updateOrganizerEvent = async (req: Request, res: Response) => {
   try {
     if (!req.is("application/json")) {

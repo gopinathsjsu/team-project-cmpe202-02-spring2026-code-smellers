@@ -10,6 +10,7 @@ import CreateEvent from "./pages/CreateEvent.tsx";
 import EditEvent from "./pages/EditEvent.tsx";
 import EventDetails from "./pages/EventDetails.tsx";
 import Home from "./pages/Home.tsx";
+import OrganizerAttendees from "./pages/OrganizerAttendees.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Forgot from "./pages/Forgot.tsx";
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="dashboard-organizer" element={<DashboardOrganizer />} />
             <Route path="CreateEvent" element={<CreateEvent />} />
             <Route path="dashboard-organizer/events/:id/edit" element={<EditEvent />} />
+            <Route path="dashboard-organizer/events/:id/attendees" element={<OrganizerAttendees />} />
             <Route element={<AdminRoute />}>
               <Route path="dashboard-admin" element={<DashboardAdmin />} />
             </Route>

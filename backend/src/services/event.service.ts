@@ -701,7 +701,41 @@ type OrganizerEventDetail = {
   } | null;
 };
 
-type ServiceFail = { ok: false; error: string; status: 400 | 403 | 404 | 500 };
+type ServiceFail = { ok: false; error: string; status: 400 | 403 | 404 | 409 | 500 };
+
+type OrganizerAttendeeUser = {
+  id: string;
+  display_name: string;
+  email: string;
+};
+
+type OrganizerAttendeeRow = {
+  id: number;
+  event_id: number;
+  customer_id: string | null;
+  created_at: string;
+  rsvp_status: Database["public"]["Enums"]["ticket_rsvp_status"] | null;
+  users: OrganizerAttendeeUser | OrganizerAttendeeUser[] | null;
+};
+
+export type OrganizerEventAttendee = {
+  ticketId: string;
+  customerId: string | null;
+  displayName: string;
+  email: string;
+  createdAt: string;
+  rsvpStatus: Database["public"]["Enums"]["ticket_rsvp_status"] | null;
+};
+
+function normalizeOrganizerAttendeeUser(
+  user: OrganizerAttendeeRow["users"],
+): OrganizerAttendeeUser | null {
+  if (user == null) {
+    return null;
+  }
+
+  return Array.isArray(user) ? (user[0] ?? null) : user;
+}
 
 function parseOptionalIsoDateTime(raw: unknown): { ok: true; value?: string } | { ok: false; error: string } {
   if (raw === undefined) {
@@ -840,6 +874,122 @@ export async function getEventForOrganizer(
       locations: loc,
     },
   };
+}
+
+export async function getOrganizerEventAttendees(
+  eventId: number,
+  organizerId: string,
+): Promise<
+  | { ok: true; event: OrganizerEventDetail; attendees: OrganizerEventAttendee[] }
+  | ServiceFail
+> {
+  const eventResult = await getEventForOrganizer(eventId, organizerId);
+  if (!eventResult.ok) {
+    return eventResult;
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("tickets")
+    .select(
+      `
+        id,
+        event_id,
+        customer_id,
+        created_at,
+        rsvp_status,
+        users ( id, display_name, email )
+      `,
+    )
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return { ok: false, error: error.message, status: 500 };
+  }
+
+  const rows = (data ?? []) as OrganizerAttendeeRow[];
+  const attendees: OrganizerEventAttendee[] = rows.map((row) => {
+    const user = normalizeOrganizerAttendeeUser(row.users);
+    return {
+      ticketId: String(row.id),
+      customerId: row.customer_id,
+      displayName: user?.display_name?.trim() || "Unknown attendee",
+      email: user?.email?.trim() || "",
+      createdAt: row.created_at,
+      rsvpStatus: row.rsvp_status,
+    };
+  });
+
+  return {
+    ok: true,
+    event: eventResult.event,
+    attendees,
+  };
+}
+
+export async function removeOrganizerEventAttendee(
+  eventId: number,
+  organizerId: string,
+  ticketId: number,
+): Promise<{ ok: true } | ServiceFail> {
+  if (!Number.isFinite(ticketId) || ticketId <= 0) {
+    return { ok: false, error: "Invalid ticket id", status: 400 };
+  }
+
+  const eventResult = await getEventForOrganizer(eventId, organizerId);
+  if (!eventResult.ok) {
+    return eventResult;
+  }
+
+  const supabase = getSupabaseClient();
+  const { data: ticket, error } = await supabase
+    .from("tickets")
+    .select("id, event_id, rsvp_status")
+    .eq("id", ticketId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message, status: 500 };
+  }
+  if (!ticket) {
+    return { ok: false, error: "Attendee not found", status: 404 };
+  }
+  if (ticket.rsvp_status === "canceled") {
+    return { ok: true };
+  }
+  if (ticket.rsvp_status !== "pending" && ticket.rsvp_status !== "confirmed") {
+    return {
+      ok: false,
+      error: "Only pending or confirmed attendees can be removed",
+      status: 409,
+    };
+  }
+
+  const nextCount = Math.max(0, (eventResult.event.rsvp_count ?? 0) - 1);
+
+  const { error: ticketUpdateError } = await supabase
+    .from("tickets")
+    .update({ rsvp_status: "canceled" })
+    .eq("id", ticketId)
+    .eq("event_id", eventId);
+
+  if (ticketUpdateError) {
+    return { ok: false, error: ticketUpdateError.message, status: 500 };
+  }
+
+  const { error: eventUpdateError } = await supabase
+    .from("events")
+    .update({ rsvp_count: nextCount })
+    .eq("id", eventId)
+    .eq("organizer_id", organizerId);
+
+  if (eventUpdateError) {
+    return { ok: false, error: eventUpdateError.message, status: 500 };
+  }
+
+  return { ok: true };
 }
 
 export async function updateEventForOrganizer(
