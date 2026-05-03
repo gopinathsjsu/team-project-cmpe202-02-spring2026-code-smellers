@@ -189,16 +189,20 @@ export function Navbar({
             value={searchQuery}
             onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Search events, artists, venues..."
+            aria-label="Search events, artists, and venues"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
         </label>
 
-        <div className="border-t border-neutral-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 md:border-t-0 md:border-x">
+        <div
+          className="border-t border-neutral-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 md:border-t-0 md:border-x"
+          aria-hidden="true"
+        >
           in
         </div>
 
         <label className="flex min-w-0 items-center gap-2 px-3 py-1.5 md:w-56">
-          <span className="shrink-0 text-neutral-500">
+          <span className="shrink-0 text-neutral-500" aria-hidden="true">
             <LocationIcon />
           </span>
           <input
@@ -206,6 +210,7 @@ export function Navbar({
             value={locationInput}
             onChange={(event) => setLocationInput(event.target.value)}
             placeholder="San Jose"
+            aria-label="City or location"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
         </label>

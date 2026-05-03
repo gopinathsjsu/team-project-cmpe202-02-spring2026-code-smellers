@@ -4,7 +4,7 @@
  * With VITE_API_URL set, requests go to that origin; otherwise same-origin /api (Vite dev proxy → backend).
  */
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const API_BASE = (process.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 export type SearchEvent = {
   id: string;

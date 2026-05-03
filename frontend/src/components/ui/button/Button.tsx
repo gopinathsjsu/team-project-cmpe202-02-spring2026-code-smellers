@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { ButtonProps, ButtonSize, ButtonVariant } from "./Button.types";
 
 function Spinner() {
