@@ -118,7 +118,10 @@ export default function Register() {
           <section className="mt-8">
             <div className="mt-4 space-y-4">
               {formError && (
-                <div className="rounded-md bg-error-50 p-3 text-sm text-error-600 border border-error-200">
+                <div
+                  className="rounded-md bg-error-50 p-3 text-sm text-error-600 border border-error-200"
+                  role="alert"
+                >
                   {formError}
                 </div>
               )}
@@ -131,6 +134,7 @@ export default function Register() {
                   error={nameError}
                 >
                   <Input
+                    id="name-box"
                     placeholder="First Last"
                     value={name}
                     error={nameError}
@@ -152,10 +156,11 @@ export default function Register() {
                   error={emailError}
                 >
                   <Input
-                    id="demo-email"
+                    id="email-box"
                     type="email"
                     placeholder="you@email.com"
                     value={email}
+                    hint="We'll never share your email."
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setEmailError(undefined);
@@ -175,9 +180,10 @@ export default function Register() {
                   error={passwordError}
                 >
                   <Input
-                    id="demo-password"
+                    id="password-box"
                     type="password"
                     value={password}
+                    hint="Your password must be at least 8 characters."
                     error={passwordError}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -188,12 +194,12 @@ export default function Register() {
                 <br></br>
                 <FormField
                   label="Confirm Password"
-                  htmlFor="demo-password"
+                  htmlFor="password2-box"
                   required
                   error={password2Error}
                 >
                   <Input
-                    id="demo-password"
+                    id="password2-box"
                     type="password"
                     value={password2}
                     error={password2Error}
@@ -231,13 +237,13 @@ export default function Register() {
                   {isSubmitting ? "Signing Up..." : "Sign Up"}
                 </Button>
 
-                <p>
+                <p className="text-sm text-neutral-800">
                   Already have an account?{" "}
                   <Link
                     to="/login"
-                    className="text-brand-600 underline hover:text-brand-800"
+                    className="text-sm font-bold text-brand-600 underline hover:text-brand-800"
                   >
-                    Log in
+                    Log in.
                   </Link>
                 </p>
               </div>

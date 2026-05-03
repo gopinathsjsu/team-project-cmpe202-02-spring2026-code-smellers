@@ -88,7 +88,10 @@ export default function Login() {
           <div className="mt-4 space-y-6">
             {/* Form Error Banner */}
             {formError && (
-              <div className="rounded-md bg-error-50 p-3 text-sm text-error-600 border border-error-200">
+              <div
+                className="rounded-md bg-error-50 p-3 text-sm text-error-600 border border-error-200"
+                role="alert"
+              >
                 {formError}
               </div>
             )}
@@ -108,6 +111,7 @@ export default function Login() {
                   type="email"
                   autoComplete="username"
                   value={email}
+                  hint="We'll never share your email."
                   error={emailError}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -119,27 +123,44 @@ export default function Login() {
             </div>
 
             {/* Password */}
-            <div>
-              <FormField
-                label="Password"
-                htmlFor="password-box"
-                required
+            <div className="w-full">
+              <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                <label
+                  htmlFor="password-box"
+                  className="text-sm font-semibold text-neutral-800"
+                >
+                  Password
+                  <span className="ml-0.5 text-accent-500">*</span>
+                </label>
+                <Link
+                  to="/forgot"
+                  className="shrink-0 text-sm font-bold text-brand-600 underline hover:text-brand-800"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password-box"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
                 error={passwordError}
-              >
-                <Input
-                  id="password-box"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  error={passwordError}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setFormError(undefined);
-                    setPasswordError(undefined);
-                  }}
-                />
-              </FormField>
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFormError(undefined);
+                  setPasswordError(undefined);
+                }}
+              />
+              {passwordError ? (
+                <p
+                  id="password-box-error"
+                  className="mt-1.5 text-sm text-error-600"
+                  role="alert"
+                >
+                  {passwordError}
+                </p>
+              ) : null}
             </div>
 
             <div className="text-center">
@@ -154,20 +175,11 @@ export default function Login() {
               </Button>
 
               <div>
-                <p>
-                  <Link
-                    to="/forgot"
-                    className="text-brand-600 underline hover:text-brand-800"
-                  >
-                    Forgot password?
-                  </Link>
-                </p>
-
-                <p>
+                <p className="text-sm text-neutral-800">
                   New to Eventdull?{" "}
                   <Link
                     to="/register"
-                    className="text-brand-600 underline hover:text-brand-800"
+                    className="text-sm font-bold text-brand-600 underline hover:text-brand-800"
                   >
                     Sign up!
                   </Link>

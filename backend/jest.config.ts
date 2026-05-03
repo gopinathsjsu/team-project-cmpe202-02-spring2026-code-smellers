@@ -9,6 +9,8 @@ const config: Config = {
     // Use the ts-jest preset to transform TypeScript files
     preset: 'ts-jest', 
     testEnvironment: 'node', // Use 'node' or 'jsdom' depending on your project type
+    roots: ['<rootDir>/src'],
+    testPathIgnorePatterns: ['/node_modules/', '/dist/'],
     // Optional: further configuration can go here
     /*  
         These lines below are example options for code coverage and test matching, you can customize them as needed
