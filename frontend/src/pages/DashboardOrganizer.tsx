@@ -114,12 +114,24 @@ function EventCard({ event }: { event: OrganizerEvent }) {
         <span className="rounded-pill bg-brand-50 px-3 py-1 text-brand-800">
           Tickets sold: <strong>{event.ticketsSold}</strong>
         </span>
-        <Button type="button" variant="outline" size="sm">
+        <Link
+          to={`/events/${event.id}`}
+          className="inline-flex items-center justify-center rounded-sm border-2 border-brand-600 bg-transparent px-2.5 py-1 text-sm font-semibold tracking-normal text-brand-600 transition-colors duration-fast hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        >
           View details
-        </Button>
-        <Button type="button" variant="outline" size="sm">
+        </Link>
+        <Link
+          to={`/dashboard-organizer/events/${event.id}/edit`}
+          className="inline-flex items-center justify-center rounded-sm border-2 border-brand-600 bg-transparent px-2.5 py-1 text-sm font-semibold tracking-normal text-brand-600 transition-colors duration-fast hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        >
           Edit
-        </Button>
+        </Link>
+        <Link
+          to={`/dashboard-organizer/events/${event.id}/attendees`}
+          className="inline-flex items-center justify-center rounded-sm border-2 border-brand-600 bg-transparent px-2.5 py-1 text-sm font-semibold tracking-normal text-brand-600 transition-colors duration-fast hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        >
+          Attendees
+        </Link>
       </div>
     </article>
   );
@@ -314,36 +326,6 @@ export default function DashboardOrganizer() {
                     <span className="text-neutral-600">Published events</span>
                     <strong className="text-success-800">{approvedCount}</strong>
                   </div>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-neutral-200 bg-surface-raised p-5 shadow-soft">
-                <h3 className="font-display text-xl font-semibold text-neutral-900">Quick Actions</h3>
-                <div className="mt-4 space-y-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    fullWidth
-                    className="justify-start"
-                  >
-                    Duplicate recent event
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    fullWidth
-                    className="justify-start"
-                  >
-                    Download attendee CSV
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    fullWidth
-                    className="justify-start"
-                  >
-                    Open event check-in
-                  </Button>
                 </div>
               </section>
 

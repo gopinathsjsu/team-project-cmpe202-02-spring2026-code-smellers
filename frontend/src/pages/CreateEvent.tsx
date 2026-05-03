@@ -66,6 +66,31 @@ const INITIAL_FORM: CreateEventFormState = {
   locationLongitude: "",
 };
 
+function parseOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function isValidDateTimeLocal(value: string): boolean {
+  if (!value.trim()) return false;
+  const d = new Date(value);
+  return !Number.isNaN(d.getTime());
+}
+
+function checklistItemClass(complete: boolean, active: boolean): string {
+  if (complete) {
+    return "rounded-sm bg-success-50 px-3 py-2 text-success-800";
+  }
+  if (active) {
+    return "rounded-sm bg-brand-50 px-3 py-2 text-brand-800";
+  }
+  return "rounded-sm bg-neutral-50 px-3 py-2";
+}
+
 export default function CreateEvent() {
   const [form, setForm] = useState<CreateEventFormState>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,15 +104,6 @@ export default function CreateEvent() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function parseOptionalNumber(value: string): number | undefined {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return undefined;
-    }
-    const n = Number(trimmed);
-    return Number.isFinite(n) ? n : undefined;
-  }
-
   function toIso(value: string): string | undefined {
     if (!value.trim()) {
       return undefined;
@@ -98,6 +114,24 @@ export default function CreateEvent() {
     }
     return d.toISOString();
   }
+
+  const hasBasicInfo =
+    form.title.trim().length > 0 && (parseOptionalNumber(form.capacity) ?? 0) > 0;
+
+  const hasValidDates =
+    isValidDateTimeLocal(form.startDateTime) &&
+    isValidDateTimeLocal(form.endDateTime) &&
+    new Date(form.endDateTime) > new Date(form.startDateTime);
+
+  const hasLocation =
+    form.locationType === "virtual" ||
+    form.locationQueryText.trim().length > 0 ||
+    form.locationVenueName.trim().length > 0 ||
+    form.locationAddress.trim().length > 0;
+
+  const isReadyToPublish = hasBasicInfo && hasValidDates && hasLocation;
+
+  const activeStep = !hasBasicInfo ? 1 : !hasValidDates ? 2 : !hasLocation ? 3 : 4;
 
   function buildPayload(): CreateEventPayload {
     return {
@@ -206,10 +240,10 @@ export default function CreateEvent() {
           <aside className="rounded-xl border border-neutral-200 bg-surface-raised p-5 shadow-soft lg:sticky lg:top-24 lg:h-fit">
             <h2 className="font-display text-2xl font-semibold text-neutral-900">Setup Checklist</h2>
             <ol className="mt-4 space-y-3 text-sm text-neutral-700">
-              <li className="rounded-sm bg-brand-50 px-3 py-2 text-brand-800">1. Basic Info</li>
-              <li className="rounded-sm bg-neutral-50 px-3 py-2">2. Date and Time</li>
-              <li className="rounded-sm bg-neutral-50 px-3 py-2">3. Location</li>
-              <li className="rounded-sm bg-neutral-50 px-3 py-2">4. Publish</li>
+              <li className={checklistItemClass(hasBasicInfo, activeStep === 1)}>1. Basic Info</li>
+              <li className={checklistItemClass(hasValidDates, activeStep === 2)}>2. Date and Time</li>
+              <li className={checklistItemClass(hasLocation, activeStep === 3)}>3. Location</li>
+              <li className={checklistItemClass(isReadyToPublish, activeStep === 4)}>4. Publish</li>
             </ol>
           </aside>
 
@@ -314,7 +348,7 @@ export default function CreateEvent() {
             <section className="rounded-xl border border-neutral-200 bg-surface-raised p-6 shadow-soft">
               <h2 className="font-display text-2xl font-semibold text-neutral-900">Location</h2>
               <p className="mt-2 text-sm text-neutral-600">
-                The <strong>Google Places Query Text</strong> is sent as <strong>location.queryText</strong>. Backend resolves the place and stores the successful location details.
+                Search for the venue/address. This value is sent as <strong>location.queryText</strong> so the backend can resolve the place before saving.
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <FormField label="Location Type" htmlFor="event-location-type" required>
@@ -329,7 +363,7 @@ export default function CreateEvent() {
                   </select>
                 </FormField>
 
-                <FormField label="Google Places Query Text" htmlFor="event-location-query" required>
+                <FormField label="Search for location" htmlFor="event-location-query" required={form.locationType === "in-person"}>
                   <Input
                     id="event-location-query"
                     value={form.locationQueryText}
