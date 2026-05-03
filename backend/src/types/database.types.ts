@@ -88,7 +88,7 @@ export type Database = {
           address: string | null
           created_at: string
           id: number
-          latitutde: number | null
+          latitude: number | null
           longitude: number | null
           type: Database["public"]["Enums"]["location_type"] | null
           venue_name: string | null
@@ -97,7 +97,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: number
-          latitutde?: number | null
+          latitude?: number | null
           longitude?: number | null
           type?: Database["public"]["Enums"]["location_type"] | null
           venue_name?: string | null
@@ -106,7 +106,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: number
-          latitutde?: number | null
+          latitude?: number | null
           longitude?: number | null
           type?: Database["public"]["Enums"]["location_type"] | null
           venue_name?: string | null
@@ -188,6 +188,41 @@ export type Database = {
           },
         ]
       }
+      ticket_notifications: {
+        Row: {
+          email_message_id: string | null
+          created_at: string
+          id: number
+          notification_type: "rsvp_prompt" | "reminder_24h"
+          sent_at: string
+          ticket_id: number
+        }
+        Insert: {
+          email_message_id?: string | null
+          created_at?: string
+          id?: number
+          notification_type: "rsvp_prompt" | "reminder_24h"
+          sent_at?: string
+          ticket_id: number
+        }
+        Update: {
+          email_message_id?: string | null
+          created_at?: string
+          id?: number
+          notification_type?: "rsvp_prompt" | "reminder_24h"
+          sent_at?: string
+          ticket_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_notifications_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string
@@ -232,6 +267,7 @@ export type Database = {
         | "food"
         | "charity"
       location_type: "in-person" | "virtual"
+      ticket_notification_type: "rsvp_prompt" | "reminder_24h"
       ticket_rsvp_status: "pending" | "confirmed" | "canceled" | "attended"
     }
     CompositeTypes: {
