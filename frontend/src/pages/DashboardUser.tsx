@@ -228,6 +228,18 @@ export default function DashboardUser() {
       .toUpperCase();
   }, [heroName]);
 
+  /** Saved bookmarks that are not already listed under Upcoming or Past tickets. */
+  const savedVisible = useMemo(() => {
+    const withTicket = new Set<string>();
+    for (const row of upcoming) {
+      withTicket.add(row.id);
+    }
+    for (const row of past) {
+      withTicket.add(row.id);
+    }
+    return saved.filter((e) => !withTicket.has(e.id));
+  }, [saved, upcoming, past]);
+
   const handleSavedCardToggle = useCallback(
     (eventId: string) => {
       void (async () => {
@@ -307,7 +319,7 @@ export default function DashboardUser() {
                 label="Saved"
                 active={tab === "saved"}
                 onSelect={setTab}
-                badge={saved.length}
+                badge={savedVisible.length}
               />
             </nav>
           </div>
@@ -376,12 +388,12 @@ export default function DashboardUser() {
                     <p className="text-sm text-red-700" role="alert">
                       {savedError}
                     </p>
-                  ) : saved.length === 0 ? (
+                  ) : savedVisible.length === 0 ? (
                     <p className="text-sm text-neutral-600">No saved events yet.</p>
                   ) : (
                     <>
                       <ul className="grid gap-5">
-                        {saved.slice(0, 2).map((e) => (
+                        {savedVisible.slice(0, 2).map((e) => (
                           <li key={e.id}>
                             <EventCard
                               id={e.id}
@@ -501,11 +513,11 @@ export default function DashboardUser() {
             <p className="text-sm text-red-700" role="alert">
               {savedError}
             </p>
-          ) : saved.length === 0 ? (
+          ) : savedVisible.length === 0 ? (
             <p className="text-sm text-neutral-600">No saved events yet.</p>
           ) : (
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {saved.map((e) => (
+              {savedVisible.map((e) => (
                 <li key={e.id}>
                   <EventCard
                     id={e.id}

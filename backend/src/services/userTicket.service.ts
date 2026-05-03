@@ -122,14 +122,18 @@ export async function listMyUpcomingTickets(
     const upcoming = rows
       .filter((row) => {
         const ev = eventFromRow(row);
-        if (!ev?.start_date_time) {
+        if (!ev) {
           return false;
         }
-        const t = new Date(ev.start_date_time).getTime();
-        if (Number.isNaN(t) || t <= now) {
-          return false;
+        const iso = ev.start_date_time;
+        if (!iso) {
+          return true;
         }
-        return true;
+        const t = new Date(iso).getTime();
+        if (Number.isNaN(t)) {
+          return true;
+        }
+        return t > now;
       })
       .sort((a, b) => {
         const evA = eventFromRow(a);
@@ -446,6 +450,78 @@ export async function rsvpForEvent(
     }
 
     return { ok: true, ticket: createdTicket };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Unexpected error",
+      status: 500,
+    };
+  }
+}
+
+export type MyTicketForEvent = {
+  ticketId: number;
+  rsvpStatus: Database["public"]["Enums"]["ticket_rsvp_status"];
+};
+
+/**
+ * Latest ticket row for this user and event (any RSVP status), by highest ticket id.
+ */
+export async function getMyTicketForEvent(
+  accessToken: string,
+  customerId: string,
+  eventId: number,
+): Promise<
+  { ok: true; ticket: MyTicketForEvent | null } | { ok: false; error: string; status: 401 | 400 | 500 }
+> {
+  if (!accessToken) {
+    return { ok: false, error: "Missing access token", status: 401 };
+  }
+  if (!customerId?.trim()) {
+    return { ok: false, error: "Missing customer id", status: 400 };
+  }
+  if (!Number.isFinite(eventId) || eventId <= 0) {
+    return { ok: false, error: "Invalid event id", status: 400 };
+  }
+
+  try {
+    const supabase = getSupabaseClientForUserAccessToken(accessToken);
+
+    const { data, error } = await supabase
+      .from("tickets")
+      .select("id, rsvp_status")
+      .eq("customer_id", customerId)
+      .eq("event_id", eventId)
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      return { ok: false, error: error.message, status: 500 };
+    }
+
+    if (!data) {
+      return { ok: true, ticket: null };
+    }
+
+    const status = data.rsvp_status;
+    if (
+      status == null ||
+      (status !== "pending" &&
+        status !== "confirmed" &&
+        status !== "attended" &&
+        status !== "canceled")
+    ) {
+      return { ok: true, ticket: null };
+    }
+
+    return {
+      ok: true,
+      ticket: {
+        ticketId: data.id,
+        rsvpStatus: status,
+      },
+    };
   } catch (e) {
     return {
       ok: false,

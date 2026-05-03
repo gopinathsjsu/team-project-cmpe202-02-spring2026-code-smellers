@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
+import { Button } from "../components/ui/button";
+import { patchMyDisplayName } from "../lib/meProfile";
 
 function initialsForName(name: string): string {
   const parts = name.split(/\s+/).filter(Boolean);
@@ -13,7 +15,7 @@ function initialsForName(name: string): string {
 }
 
 export default function UserSettings() {
-  const { user } = useAuth();
+  const { user, refreshAuth } = useAuth();
 
   const displayName = useMemo(() => {
     if (!user) return "Account";
@@ -23,18 +25,43 @@ export default function UserSettings() {
     return email || "Account";
   }, [user]);
 
-  const [draftDisplayName, setDraftDisplayName] = useState(user?.display_name ?? "");
+  const [draftDisplayName, setDraftDisplayName] = useState(() => user?.display_name ?? "");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(true);
 
+  const savedDisplayName = (user?.display_name ?? "").trim();
+  const trimmedDraft = draftDisplayName.trim();
+  const isDisplayNameDirty = trimmedDraft !== savedDisplayName;
+
   const avatarInitials = useMemo(() => {
-    const dn = user?.display_name?.trim();
+    const dn = trimmedDraft || user?.display_name?.trim();
     if (dn) return initialsForName(dn);
     const email = user?.email?.trim();
     if (email && email.includes("@")) {
       return initialsForName(email.split("@")[0] ?? "");
     }
     return "ED";
-  }, [user?.display_name, user?.email]);
+  }, [trimmedDraft, user?.display_name, user?.email]);
+
+  async function handleSaveDisplayName() {
+    if (!trimmedDraft) {
+      setSaveError("Display name cannot be empty.");
+      setSaveStatus("error");
+      return;
+    }
+    setSaveStatus("saving");
+    setSaveError(null);
+    try {
+      await patchMyDisplayName(trimmedDraft);
+      await refreshAuth();
+      setSaveStatus("saved");
+      window.setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Save failed");
+      setSaveStatus("error");
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -74,11 +101,35 @@ export default function UserSettings() {
                 id="display-name"
                 type="text"
                 value={draftDisplayName}
-                onChange={(e) => setDraftDisplayName(e.target.value)}
-                className="mt-2 w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-500 focus:border-brand-500"
+                onChange={(e) => {
+                  setDraftDisplayName(e.target.value);
+                  if (saveStatus === "saved" || saveStatus === "error") {
+                    setSaveStatus("idle");
+                    setSaveError(null);
+                  }
+                }}
+                className="mt-2 w-full rounded-sm border border-neutral-300 bg-surface-raised px-3 py-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-0"
                 placeholder="Your name"
+                maxLength={120}
+                autoComplete="name"
               />
-              <p className="mt-2 text-xs text-neutral-500">Static for now.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={!isDisplayNameDirty || saveStatus === "saving" || !trimmedDraft}
+                  isLoading={saveStatus === "saving"}
+                  onClick={() => void handleSaveDisplayName()}
+                  className="cursor-pointer"
+                >
+                  Save name
+                </Button>
+                {saveStatus === "saved" ? (
+                  <span className="text-xs font-medium text-success-700">Saved.</span>
+                ) : null}
+                {saveError ? <span className="text-xs font-medium text-error-600">{saveError}</span> : null}
+              </div>
             </div>
           </div>
 
