@@ -213,7 +213,6 @@ export default function Register() {
                   size="lg"
                   isLoading={isSubmitting}
                   onClick={() => {
-                    console.log(password.length);
                     setNameError(name ? undefined : "Name is required.");
                     setEmailError(email ? undefined : "Email is required.");
                     setPasswordError(

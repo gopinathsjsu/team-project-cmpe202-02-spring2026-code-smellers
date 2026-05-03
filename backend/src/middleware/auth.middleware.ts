@@ -35,3 +35,37 @@ export const requireAuth = async (
 		});
 	}
 };
+
+export const requireAdmin = async (
+	req: Request,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const userId = (req as RequestWithUser).user?.id;
+		if (!userId) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
+
+		const supabase = getSupabaseClient();
+		const { data, error } = await supabase
+			.from("users")
+			.select("is_admin")
+			.eq("id", userId)
+			.maybeSingle();
+
+		if (error) {
+			return res.status(500).json({ error: error.message });
+		}
+
+		if (!data?.is_admin) {
+			return res.status(403).json({ error: "Admin access required" });
+		}
+
+		return next();
+	} catch (error) {
+		return res.status(500).json({
+			error: error instanceof Error ? error.message : "Unexpected error",
+		});
+	}
+};
