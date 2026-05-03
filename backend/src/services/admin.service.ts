@@ -88,7 +88,7 @@ type AdminEventReviewRow = {
   locations: {
     venue_name: string | null;
     address: string | null;
-    latitutde: number | null;
+    latitude: number | null;
     longitude: number | null;
   } | null;
   organizer: {
@@ -174,7 +174,7 @@ export async function getAdminEventReview(eventId: number): Promise<{ ok: true; 
         capacity,
         image_url,
         approval_status,
-        locations ( venue_name, address, latitutde, longitude ),
+        locations ( venue_name, address, latitude, longitude ),
         organizer:users!events_organizer_id_fkey ( id, display_name )
       `,
     )
@@ -209,7 +209,7 @@ export async function getAdminEventReview(eventId: number): Promise<{ ok: true; 
         ? {
             venueName: row.locations.venue_name,
             address: row.locations.address,
-            latitude: row.locations.latitutde,
+            latitude: row.locations.latitude,
             longitude: row.locations.longitude,
           }
         : null,
@@ -241,7 +241,7 @@ export async function moderateEvent(
         capacity,
         image_url,
         approval_status,
-        locations ( venue_name, address, latitutde, longitude ),
+        locations ( venue_name, address, latitude, longitude ),
         organizer:users!events_organizer_id_fkey ( id, display_name )
       `,
     )
@@ -275,7 +275,7 @@ export async function moderateEvent(
         ? {
             venueName: row.locations.venue_name,
             address: row.locations.address,
-            latitude: row.locations.latitutde,
+            latitude: row.locations.latitude,
             longitude: row.locations.longitude,
           }
         : null,
