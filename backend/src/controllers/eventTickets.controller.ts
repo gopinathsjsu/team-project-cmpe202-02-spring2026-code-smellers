@@ -47,8 +47,8 @@ export const rsvpForEvent = async (req: Request, res: Response) => {
       return res.status(result.status).json({ error: result.error });
     }
 
-    void ticketNotificationService.sendRsvpPromptForNewTicket(result.ticket.id).catch(() => {
-      // best-effort email delivery; RSVP should still succeed
+    void ticketNotificationService.sendRsvpPromptForNewTicket(result.ticket.id).catch((err) => {
+      console.error("RSVP email failed:", err);
     });
 
     return res.status(201).json({ ticket: result.ticket });
@@ -134,7 +134,7 @@ function buildHtmlPage(title: string, message: string, isSuccess: boolean): stri
         <div class="icon">${isSuccess ? "✓" : "✕"}</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <a href="/" class="button">Back to Home</a>
+        <a href="http://localhost:5173/" class="button">Back to Home</a>
       </div>
     </body>
     </html>
