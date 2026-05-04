@@ -13,6 +13,7 @@ import {
 } from "../lib/eventCalendar";
 import { apiUrl } from "../lib/api";
 import { addSavedEvent, fetchMySavedEvents, removeSavedEvent } from "../lib/meSaved";
+import { fetchMyTicketForEvent, type MyTicketForEventApi, type TicketRsvpStatus } from "../lib/meTickets";
 import type { SearchEvent } from "../services/searchApi";
 import { getAuthToken } from "../lib/auth";
 
@@ -298,7 +299,8 @@ export default function EventDetails() {
   const [isSaved, setIsSaved] = useState(false);
   const [isRsvping, setIsRsvping] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
-  const [hasRsvped, setHasRsvped] = useState(false);
+  const [myTicket, setMyTicket] = useState<MyTicketForEventApi | null>(null);
+  const [ticketLoading, setTicketLoading] = useState(false);
   const [related, setRelated] = useState<SearchEvent[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
@@ -409,8 +411,58 @@ export default function EventDetails() {
     };
   }, [event, status]);
 
+  useEffect(() => {
+    if (!event?.id || status !== "authenticated") {
+      setMyTicket(null);
+      setTicketLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setTicketLoading(true);
+    void fetchMyTicketForEvent(String(event.id))
+      .then((t) => {
+        if (!cancelled) {
+          setMyTicket(t);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMyTicket(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setTicketLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, status]);
+
+  const isEventPast = useMemo(() => {
+    if (!event?.start_date_time?.trim()) {
+      return false;
+    }
+    const t = new Date(event.start_date_time).getTime();
+    if (Number.isNaN(t)) {
+      return false;
+    }
+    return t <= Date.now();
+  }, [event?.start_date_time]);
+
+  const activeUpcomingRsvp =
+    myTicket && (myTicket.rsvpStatus === "pending" || myTicket.rsvpStatus === "confirmed");
+  const showRegisteredState = Boolean(!isEventPast && activeUpcomingRsvp);
+  const pastUserAttended = Boolean(isEventPast && myTicket?.rsvpStatus === "attended");
+
   const handleToggleSaved = useCallback(async () => {
     if (!event) {
+      return;
+    }
+    if (isEventPast) {
       return;
     }
     const eventId = String(event.id);
@@ -429,7 +481,7 @@ export default function EventDetails() {
     } catch {
       /* keep previous state */
     }
-  }, [event, isSaved, status]);
+  }, [event, isEventPast, isSaved, status]);
 
   const handleRsvp = useCallback(async () => {
     if (!event) {
@@ -478,7 +530,43 @@ export default function EventDetails() {
         throw new Error(message);
       }
 
-      setHasRsvped(true);
+      const ticketRaw =
+        body && typeof body === "object" && body !== null && "ticket" in body
+          ? (body as { ticket: unknown }).ticket
+          : null;
+      let nextTicket: MyTicketForEventApi | null = null;
+      if (
+        ticketRaw &&
+        typeof ticketRaw === "object" &&
+        "id" in ticketRaw &&
+        "rsvp_status" in ticketRaw &&
+        typeof (ticketRaw as { id: unknown }).id === "number" &&
+        typeof (ticketRaw as { rsvp_status: unknown }).rsvp_status === "string"
+      ) {
+        const st = (ticketRaw as { rsvp_status: string }).rsvp_status;
+        if (st === "pending" || st === "confirmed" || st === "attended" || st === "canceled") {
+          nextTicket = {
+            ticketId: (ticketRaw as { id: number }).id,
+            rsvpStatus: st as TicketRsvpStatus,
+          };
+        }
+      }
+      if (nextTicket) {
+        setMyTicket(nextTicket);
+      } else if (event) {
+        void fetchMyTicketForEvent(String(event.id))
+          .then(setMyTicket)
+          .catch(() => {
+            /* keep optimistic UI minimal */
+          });
+      }
+
+      try {
+        await removeSavedEvent(String(event.id));
+      } catch {
+        /* not saved or network — RSVP still succeeded */
+      }
+      setIsSaved(false);
     } catch (error) {
       setRsvpError(error instanceof Error ? error.message : "Could not register for this event.");
     } finally {
@@ -813,12 +901,21 @@ export default function EventDetails() {
                     <button
                       type="button"
                       onClick={() => void handleToggleSaved()}
+                      disabled={isEventPast}
                       className={
-                        isSaved
-                          ? "flex h-10 w-10 items-center justify-center rounded-sm bg-accent-400 text-accent-950 transition-colors duration-fast hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                          : "flex h-10 w-10 items-center justify-center rounded-sm border border-neutral-300 bg-surface-raised text-neutral-600 transition-colors duration-fast hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                        isEventPast
+                          ? "flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-sm border border-neutral-200 bg-neutral-100 text-neutral-400 opacity-70 focus:outline-none"
+                          : isSaved
+                            ? "flex h-10 w-10 items-center justify-center rounded-sm bg-accent-400 text-accent-950 transition-colors duration-fast hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                            : "flex h-10 w-10 items-center justify-center rounded-sm border border-neutral-300 bg-surface-raised text-neutral-600 transition-colors duration-fast hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                       }
-                      aria-label={isSaved ? "Remove from favorites" : "Add to favorites"}
+                      aria-label={
+                        isEventPast
+                          ? "Saving is not available for past events"
+                          : isSaved
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                      }
                     >
                       <HeartIcon className="h-5 w-5" filled={isSaved} />
                     </button>
@@ -829,7 +926,15 @@ export default function EventDetails() {
                   >
                     <p className="text-sm font-semibold text-accent-600">Free</p>
                     <p className="mt-1 text-sm text-neutral-600">
-                      Press RSVP to register for this event.
+                      {showRegisteredState
+                        ? "You are registered for this event."
+                        : isEventPast
+                          ? status === "authenticated" && ticketLoading
+                            ? "Loading your registration…"
+                            : pastUserAttended
+                              ? "You attended this event."
+                              : "Event has passed."
+                          : "Press RSVP to register for this event."}
                     </p>
                     <Button
                       type="button"
@@ -838,15 +943,26 @@ export default function EventDetails() {
                       fullWidth
                       className="mt-6"
                       onClick={() => void handleRsvp()}
-                      isLoading={isRsvping}
-                      disabled={hasRsvped}
+                      isLoading={
+                        isRsvping ||
+                        (isEventPast && status === "authenticated" && ticketLoading)
+                      }
+                      disabled={
+                        ticketLoading || showRegisteredState || isEventPast
+                      }
                     >
-                      {hasRsvped ? "Registered" : "RSVP"}
+                      {showRegisteredState
+                        ? "Registered"
+                        : isEventPast
+                          ? pastUserAttended
+                            ? "Attended"
+                            : ticketLoading && status === "authenticated"
+                              ? "…"
+                              : "Ended"
+                          : "RSVP"}
                     </Button>
                     {rsvpError ? (
                       <p className="mt-3 text-sm text-error-600">{rsvpError}</p>
-                    ) : hasRsvped ? (
-                      <p className="mt-3 text-sm text-emerald-700">You are registered for this event.</p>
                     ) : null}
                     {googleCalendarUrl ? (
                       <details className="mt-4 open:[&_.calendar-chevron]:rotate-180">

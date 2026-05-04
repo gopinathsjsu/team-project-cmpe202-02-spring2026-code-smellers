@@ -54,7 +54,7 @@ describe("Supabase users table", () => {
       body: {
         email: testEmail,
         password: testPassword,
-        displayName: testDisplayName,
+        name: testDisplayName,
         is_admin: testIsAdmin,
       },
     } as any;
@@ -77,17 +77,17 @@ describe("Supabase users table", () => {
       password: testPassword,
       options: {
         data: {
-          displayName: testDisplayName,
+          display_name: testDisplayName,
           is_admin: testIsAdmin,
         },
       },
     });
 
     expect(statusCode).toBe(201);
-    expect(responseBody.email).toBe(testEmail);
-    expect(responseBody.display_name).toBe(testDisplayName);
-    expect(responseBody.is_admin).toBe(testIsAdmin);
-    expect(responseBody.id).toBe(fakeAuthUserId);
+    expect(responseBody.user.email).toBe(testEmail);
+    expect(responseBody.user.display_name).toBe(testDisplayName);
+    expect(responseBody.user.is_admin).toBe(testIsAdmin);
+    expect(responseBody.user.id).toBe(fakeAuthUserId);
 
     const { data: insertedUser, error: fetchError } = await realSupabase
       .from("users")

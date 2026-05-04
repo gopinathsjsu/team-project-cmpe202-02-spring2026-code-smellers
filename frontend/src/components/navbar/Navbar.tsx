@@ -40,6 +40,49 @@ function LocationIcon() {
   );
 }
 
+function DashboardUserIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="10" cy="7" r="2.75" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 17v-.5a4 4 0 014-4h3a4 4 0 014 4v.5" />
+    </svg>
+  );
+}
+
+function DashboardOrganizerIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="3.5" y="4.5" width="13" height="12" rx="1.5" strokeLinejoin="round" />
+      <path strokeLinecap="round" d="M3.5 8h13M7 3v3M13 3v3" />
+    </svg>
+  );
+}
+
+function DashboardAdminIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 3.5l6 2.4v5.6c0 3.2-2.5 5.6-6 6.9-3.5-1.3-6-3.7-6-6.9V5.9L10 3.5z" />
+    </svg>
+  );
+}
+
+function SettingsMenuIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="10" cy="10" r="2.25" />
+      <path strokeLinecap="round" d="M10 3.5v1.2M10 15.3V17M16.5 10h-1.2M4.7 10H3.5M14.6 5.4l-.85.85M6.25 13.75l-.85.85M14.6 14.6l-.85-.85M6.25 6.25l-.85-.85" />
+    </svg>
+  );
+}
+
+function LogOutMenuIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 17H5.5A1.5 1.5 0 014 15.5v-11A1.5 1.5 0 015.5 3h2M13 10h-8M11.5 7.5L14 10l-2.5 2.5" />
+    </svg>
+  );
+}
+
 function getInitials(name?: string) {
   if (!name) {
     return "ED";
@@ -72,18 +115,15 @@ export function Navbar({
   const { status, user, logout } = useAuth();
   const navigate = useNavigate();
 
+  /** Same width rules for dashboard + profile menus: shrink to content, shared max for long names. */
+  const navDropdownPanelClass =
+    "absolute right-0 top-full z-50 mt-2 w-max min-w-0 max-w-[14.5rem] overflow-hidden rounded-lg border border-neutral-200 bg-surface-raised py-1.5 shadow-soft";
+
   // const initials = useMemo(() => getInitials(user?.name), [user?.name]);
   const initials = useMemo(
     () => getInitials(user?.display_name),
     [user?.display_name],
   );
-
-  const dashboardPath = useMemo(() => {
-    if (user?.is_admin) {
-      return "/dashboard-admin";
-    }
-    return "/dashboard-user";
-  }, [user?.is_admin]);
 
   // Close profile menu when clicking outside. Anyone got a better way to do this without a library?
   useEffect(() => {
@@ -149,16 +189,20 @@ export function Navbar({
             value={searchQuery}
             onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Search events, artists, venues..."
+            aria-label="Search events, artists, and venues"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
         </label>
 
-        <div className="border-t border-neutral-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 md:border-t-0 md:border-x">
+        <div
+          className="border-t border-neutral-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 md:border-t-0 md:border-x"
+          aria-hidden="true"
+        >
           in
         </div>
 
         <label className="flex min-w-0 items-center gap-2 px-3 py-1.5 md:w-56">
-          <span className="shrink-0 text-neutral-500">
+          <span className="shrink-0 text-neutral-500" aria-hidden="true">
             <LocationIcon />
           </span>
           <input
@@ -166,6 +210,7 @@ export function Navbar({
             value={locationInput}
             onChange={(event) => setLocationInput(event.target.value)}
             placeholder="San Jose"
+            aria-label="City or location"
             className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500"
           />
         </label>
@@ -229,14 +274,15 @@ export function Navbar({
                     onClick={() => setIsDashboardMenuOpen((prev) => !prev)}
                     aria-haspopup="menu"
                     aria-expanded={isDashboardMenuOpen}
-                    className="flex items-center gap-1 cursor-pointer"
+                    className={`flex items-center gap-1 cursor-pointer ${isDashboardMenuOpen ? "border-brand-500 bg-brand-50 text-brand-800" : ""}`}
                   >
                     Dashboard
                     <svg
-                      className="h-3.5 w-3.5 text-neutral-500"
+                      className={`h-3.5 w-3.5 shrink-0 text-current opacity-70 transition-transform duration-fast ${isDashboardMenuOpen ? "rotate-180" : ""}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
+                      aria-hidden
                     >
                       <path
                         strokeLinecap="round"
@@ -250,32 +296,63 @@ export function Navbar({
                   {isDashboardMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute left-1/2 top-full mt-2 z-50 w-48 -translate-x-1/2 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg ring-1 ring-black/5"
+                      aria-label="Dashboard destinations"
+                      className={navDropdownPanelClass}
                     >
-                      <div className="py-1">
-                        <Link
+                      <div className="flex flex-col gap-0.5 px-1.5">
+                        <NavLink
+                          role="menuitem"
                           to="/dashboard-user"
-                          className="block px-4 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                          className={({ isActive }) =>
+                            [
+                              "group flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm font-medium transition-colors duration-fast outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0",
+                              isActive
+                                ? "bg-brand-50 text-brand-900"
+                                : "text-neutral-700 hover:bg-brand-50/90 hover:text-brand-900",
+                            ].join(" ")
+                          }
                           onClick={() => setIsDashboardMenuOpen(false)}
                         >
-                          User Dashboard
-                        </Link>
-                        <Link
+                          <DashboardUserIcon className="h-4 w-4 shrink-0 text-brand-600 opacity-90 group-hover:opacity-100" />
+                          <span className="min-w-0 flex-1 leading-snug">User Dashboard</span>
+                        </NavLink>
+                        <NavLink
+                          role="menuitem"
                           to="/dashboard-organizer"
-                          className="block px-4 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                          className={({ isActive }) =>
+                            [
+                              "group flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm font-medium transition-colors duration-fast outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0",
+                              isActive
+                                ? "bg-brand-50 text-brand-900"
+                                : "text-neutral-700 hover:bg-brand-50/90 hover:text-brand-900",
+                            ].join(" ")
+                          }
                           onClick={() => setIsDashboardMenuOpen(false)}
                         >
-                          Organizer Dashboard
-                        </Link>
-                        {user?.is_admin && (
-                          <Link
-                            to="/dashboard-admin"
-                            className="block border-t border-neutral-100 px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50"
-                            onClick={() => setIsDashboardMenuOpen(false)}
-                          >
-                            Admin Dashboard
-                          </Link>
-                        )}
+                          <DashboardOrganizerIcon className="h-4 w-4 shrink-0 text-brand-600 opacity-90 group-hover:opacity-100" />
+                          <span className="min-w-0 flex-1 leading-snug">Organizer Dashboard</span>
+                        </NavLink>
+                        {user?.is_admin ? (
+                          <>
+                            <div className="mx-1.5 my-1 h-px bg-neutral-100" aria-hidden />
+                            <NavLink
+                              role="menuitem"
+                              to="/dashboard-admin"
+                              className={({ isActive }) =>
+                                [
+                                  "group flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm font-semibold transition-colors duration-fast outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0",
+                                  isActive
+                                    ? "bg-brand-100 text-brand-900"
+                                    : "text-brand-800 hover:bg-brand-50 hover:text-brand-950",
+                                ].join(" ")
+                              }
+                              onClick={() => setIsDashboardMenuOpen(false)}
+                            >
+                              <DashboardAdminIcon className="h-4 w-4 shrink-0 text-brand-700 opacity-90 group-hover:opacity-100" />
+                              <span className="min-w-0 flex-1 leading-snug">Admin Dashboard</span>
+                            </NavLink>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -285,7 +362,12 @@ export function Navbar({
                   <button
                     type="button"
                     onClick={() => setIsProfileMenuOpen((open) => !open)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-pill bg-brand-800 text-xs font-semibold text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    className={[
+                      "inline-flex h-8 w-8 items-center justify-center rounded-pill bg-brand-800 text-xs font-semibold text-white cursor-pointer transition-shadow duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
+                      isProfileMenuOpen ? "ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-base" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     aria-label={`Signed in as ${user?.display_name ?? "Eventdull user"}`}
                     aria-haspopup="menu"
                     aria-expanded={isProfileMenuOpen}
@@ -297,28 +379,39 @@ export function Navbar({
                   {isProfileMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute left-1/2 top-full mt-2 z-50 w-40 -translate-x-1/2 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg ring-1 ring-black/5"
+                      aria-label="Account menu"
+                      className={navDropdownPanelClass}
                     >
-                      <div className="py-1">
-                        <div className="border-b border-neutral-100 px-4 py-2 text-center text-xs text-neutral-700 truncate">
+                      <div className="border-b border-neutral-100 px-3 py-2">
+                        <p className="truncate text-sm font-semibold text-neutral-900">
                           {user?.display_name || "Account"}
-                        </div>
-
-                        <Link
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-0.5 px-1.5 pt-1.5">
+                        <NavLink
+                          role="menuitem"
                           to="/settings"
+                          className={({ isActive }) =>
+                            [
+                              "group flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm font-medium transition-colors duration-fast outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0",
+                              isActive
+                                ? "bg-brand-50 text-brand-900"
+                                : "text-neutral-700 hover:bg-brand-50/90 hover:text-brand-900",
+                            ].join(" ")
+                          }
                           onClick={() => setIsProfileMenuOpen(false)}
-                          className="block px-4 py-2 text-center text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
                         >
-                          Settings
-                        </Link>
-
+                          <SettingsMenuIcon className="h-4 w-4 shrink-0 text-brand-600 opacity-90 group-hover:opacity-100" />
+                          <span className="min-w-0 flex-1 leading-snug">Settings</span>
+                        </NavLink>
                         <button
                           type="button"
                           role="menuitem"
                           onClick={handleLogout}
-                          className="block w-full px-4 py-2 text-center text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
+                          className="group flex w-full cursor-pointer items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-sm font-medium text-error-600 transition-colors duration-fast outline-none hover:bg-error-50 hover:text-error-700 focus-visible:ring-2 focus-visible:ring-error-500 focus-visible:ring-offset-0"
                         >
-                          Log out
+                          <LogOutMenuIcon className="h-4 w-4 shrink-0 text-error-500 opacity-90 group-hover:opacity-100" />
+                          <span className="min-w-0 flex-1 leading-snug">Log out</span>
                         </button>
                       </div>
                     </div>

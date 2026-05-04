@@ -15,7 +15,7 @@ type DashboardEvent = {
 
 type TicketCard = DashboardEvent & { ticketId: number; rsvpStatus: TicketRsvpStatus };
 
-type TabId = "overview" | "upcoming" | "past" | "saved" | "settings";
+type TabId = "overview" | "upcoming" | "past" | "saved";
 
 /** RSVP pill text for Past list rows and Upcoming cards (aligned with ticket `rsvp_status`). */
 function rsvpStatusLabel(status: TicketRsvpStatus): string {
@@ -68,29 +68,6 @@ function UserIcon({ className }: { className?: string }) {
       <path d="M20 21a8 8 0 0 0-16 0" />
       <circle cx="12" cy="8" r="4" />
     </svg>
-  );
-}
-
-function SettingsPreviewCard() {
-  return (
-    <div
-      className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-surface-raised"
-      style={{ boxShadow: "var(--ds-shadow-card)" }}
-    >
-      <div className="border-b border-neutral-100 px-5 py-4">
-        <h3 className="font-display text-lg font-bold text-neutral-900">Settings</h3>
-      </div>
-      <div className="space-y-3 px-5 py-4">
-        <div className="rounded-xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200/70">
-          <p className="text-sm font-semibold text-neutral-900">Notifications</p>
-          <p className="mt-0.5 text-xs text-neutral-500">Reminders, weekly digest, price drops</p>
-        </div>
-        <div className="rounded-xl bg-neutral-50 px-4 py-3 ring-1 ring-neutral-200/70">
-          <p className="text-sm font-semibold text-neutral-900">Account</p>
-          <p className="mt-0.5 text-xs text-neutral-500">Email, password, privacy</p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -251,6 +228,18 @@ export default function DashboardUser() {
       .toUpperCase();
   }, [heroName]);
 
+  /** Saved bookmarks that are not already listed under Upcoming or Past tickets. */
+  const savedVisible = useMemo(() => {
+    const withTicket = new Set<string>();
+    for (const row of upcoming) {
+      withTicket.add(row.id);
+    }
+    for (const row of past) {
+      withTicket.add(row.id);
+    }
+    return saved.filter((e) => !withTicket.has(e.id));
+  }, [saved, upcoming, past]);
+
   const handleSavedCardToggle = useCallback(
     (eventId: string) => {
       void (async () => {
@@ -330,13 +319,7 @@ export default function DashboardUser() {
                 label="Saved"
                 active={tab === "saved"}
                 onSelect={setTab}
-                badge={saved.length}
-              />
-              <SegmentedTab
-                tabId="settings"
-                label="Settings"
-                active={tab === "settings"}
-                onSelect={setTab}
+                badge={savedVisible.length}
               />
             </nav>
           </div>
@@ -405,12 +388,12 @@ export default function DashboardUser() {
                     <p className="text-sm text-red-700" role="alert">
                       {savedError}
                     </p>
-                  ) : saved.length === 0 ? (
+                  ) : savedVisible.length === 0 ? (
                     <p className="text-sm text-neutral-600">No saved events yet.</p>
                   ) : (
                     <>
                       <ul className="grid gap-5">
-                        {saved.slice(0, 2).map((e) => (
+                        {savedVisible.slice(0, 2).map((e) => (
                           <li key={e.id}>
                             <EventCard
                               id={e.id}
@@ -530,11 +513,11 @@ export default function DashboardUser() {
             <p className="text-sm text-red-700" role="alert">
               {savedError}
             </p>
-          ) : saved.length === 0 ? (
+          ) : savedVisible.length === 0 ? (
             <p className="text-sm text-neutral-600">No saved events yet.</p>
           ) : (
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {saved.map((e) => (
+              {savedVisible.map((e) => (
                 <li key={e.id}>
                   <EventCard
                     id={e.id}
@@ -593,11 +576,6 @@ export default function DashboardUser() {
         </div>
       ) : null}
 
-      {tab === "settings" ? (
-        <div className="mt-4">
-          <SettingsPreviewCard />
-        </div>
-      ) : null}
     </div>
   );
 }

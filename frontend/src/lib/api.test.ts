@@ -1,4 +1,11 @@
+import { apiUrl } from "./api";
 import { buildApiUrl } from "./buildApiUrl";
+
+describe("apiUrl", () => {
+  it("matches buildApiUrl with undefined base (same as unset VITE_API_URL)", () => {
+    expect(apiUrl("/api/events")).toBe(buildApiUrl(undefined, "/api/events"));
+  });
+});
 
 describe("buildApiUrl", () => {
   it("defaults to localhost:3000 when base is undefined", () => {

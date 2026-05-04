@@ -33,6 +33,7 @@ export default function Forgot() {
                   type="email"
                   placeholder="you@example.com"
                   value={email}
+                  hint="We will send you a password reset link if there is an account associated with your email address."
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setFormError(undefined);
