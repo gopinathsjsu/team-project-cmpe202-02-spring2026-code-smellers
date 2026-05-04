@@ -111,6 +111,7 @@ export default function ComponentDemo() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
+                hint="We'll never share your email."
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setFormError(undefined);
@@ -204,7 +205,6 @@ export default function ComponentDemo() {
         </p>
         <div className="mt-4 overflow-hidden rounded-xl border-2 border-neutral-200">
           <Navbar
-            isLoggedIn={false}
             browseLocation={navbarDemoLocation}
             onBrowseLocationChange={setNavbarDemoLocation}
             onSearch={({ query, location }) =>
@@ -217,10 +217,8 @@ export default function ComponentDemo() {
             Logged-in state (Create Event + avatar)
           </p>
           <Navbar
-            isLoggedIn={true}
             browseLocation={navbarDemoLocationB}
             onBrowseLocationChange={setNavbarDemoLocationB}
-            user={{ name: "Jane Doe" }}
             onSearch={({ query, location }) =>
               console.log("Search:", query, location)
             }
