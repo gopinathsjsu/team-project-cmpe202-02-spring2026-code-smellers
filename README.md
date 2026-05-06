@@ -1,4 +1,14 @@
-[Sprint Journal](https://docs.google.com/spreadsheets/d/13qeoltkKJG6WMwRhQXqeniMV62aO0sXjUlUNBmin17g/edit?usp=sharing)
+# Code Smellers
+
+**Isaiah Callano** - Self-Appointed Project Manager, Admin for Supabase and Google Cloud Platform
+
+**Connor Starnes** - Backend Lead, AWS Deployment Admin, Most Code Written
+
+**Avneet Kaur Thind** - Frontend Lead, UI/UX Designer, Test Writer
+
+**Jack Kibort** - User Story + Burndown Chart Automator, Full-Stack Developer
+
+[Sprint Journal + Backlogs + Burndown Charts](https://docs.google.com/spreadsheets/d/13qeoltkKJG6WMwRhQXqeniMV62aO0sXjUlUNBmin17g/edit?usp=sharing)
 
 [Wireframes](https://docs.google.com/drawings/d/1dWO6uze7gfvFrFekTF8Ov51uIQf5ioiAhiyGlJvf3Go/edit?usp=sharing)
 
@@ -60,12 +70,3 @@
 1. Communication - We emphasized regular communication through weekly/bi-weekly sprint video meetings with our cameras on. These meetings are about 1-2 hours long. They start off with a standup format but more often than not becomes an open forum after. In addition to our work discussions, we often engage in "parking lot" talk at the end of the meeting, talking about other classes, life outside school, and so on. Outside meetings, we also use Discord for quick communications like bug reports, code review requests, and spike story reporting. In class, during breaks, we engage in more "parking lot" talk, topics adjacent to the class discussion, or things completely unrelated to the class at all. We believe that this constant communication enhanced collaboration and work quality.
 
 2. Feedback - For every change in the codebase, the changer has to submit a pull request. At least one other team member must perform a code review and approve, reject, or request changes. It is not typical for PRs to be outright rejected but when they do, some discussion is warranted during the next sprint meeting. We are direct but kind with our feedback, and each of us are open to feedback from others. We leave comments on pull requests, on Discord, and sometimes on the code itself. We talk about how others' code changes affect the overall project and our own developer experience.
-
-### Ownership / Informal Roles
-**Isaiah Callano** - Self-Appointed Project Manager, Admin for Supabase and Google Cloud Platform
-
-**Connor Starnes** - Backend Lead, AWS Deployment Admin, Most Code Written
-
-**Avneet Kaur Thind** - Frontend Lead, UI/UX Designer, Test Writer
-
-**Jack Kibort** - User Story + Burndown Chart Automator, Full-Stack Developer
